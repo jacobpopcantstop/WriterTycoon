@@ -3,18 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Writer Tycoon (Prototype)</title>
+    <title>Writer Tycoon</title>
     <style>
         :root {
-            --bg: #121212;
-            --panel: #1e1e1e;
+            --bg: #0a0a0a;
+            --panel: #141414;
             --text: #e0e0e0;
-            --accent: #4ade80; /* Money Green */
+            --accent: #4ade80; 
             --accent-dim: rgba(74, 222, 128, 0.1);
-            --border: #333;
+            --gold: #fbbf24;
+            --danger: #ef4444; 
+            --border: #222;
             --font-mono: "Courier New", monospace;
             --font-ui: system-ui, -apple-system, sans-serif;
+            --sidebar-w: 280px;
+            --dashboard-w: 380px;
         }
+
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
@@ -24,394 +30,618 @@
             height: 100vh;
             display: flex;
             overflow: hidden;
+            position: relative; /* For absolute positioning of toggles */
         }
 
-        /* --- LEFT PANEL: THE DESK --- */
-        .desk-panel {
-            flex: 2;
+        /* --- SIDEBAR: MANUSCRIPT --- */
+        .sidebar {
+            width: var(--sidebar-w);
+            background: #0d0d0d;
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            border-right: 1px solid var(--border);
-            padding: 20px;
+            flex-shrink: 0;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 20;
+            position: relative;
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+            margin-right: -280px; /* Pull main content back */
         }
 
-        .desk-header {
+        .sidebar-header { padding: 25px 20px; border-bottom: 1px solid var(--border); background: #111; }
+        .manuscript-list { flex: 1; overflow-y: auto; padding: 15px; }
+
+        .manuscript-item {
+            padding: 12px; border-radius: 8px; margin-bottom: 10px; background: #141414; border: 1px solid #1a1a1a; cursor: pointer; transition: all 0.2s;
+        }
+        .manuscript-item:hover { border-color: var(--accent); background: #1a1a1a; }
+        .manuscript-item .m-title { font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent); font-weight: bold; margin-bottom: 4px; }
+        .manuscript-item .m-meta { font-size: 0.7rem; opacity: 0.4; display: flex; justify-content: space-between; }
+
+        /* --- MAIN WORKSPACE --- */
+        .desk-panel {
+            flex: 1;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            padding: 20px 30px;
+            position: relative;
+            background: var(--bg);
+            min-width: 0;
+            z-index: 10;
+        }
+
+        .desk-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h1 { margin: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 3px; opacity: 0.5; }
+        .project-label { font-family: var(--font-mono); color: var(--accent); font-weight: bold; font-size: 0.9rem; margin-left: 15px; }
+
+        .active-job-display {
+            background: #111; border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .editor-wrapper {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
             margin-bottom: 20px;
         }
-
-        h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; }
 
         textarea {
             flex: 1;
-            background: var(--panel);
+            background: #0d0d0d;
             border: 1px solid var(--border);
             color: var(--text);
             font-family: var(--font-mono);
-            font-size: 1.1rem;
-            line-height: 1.6;
-            padding: 20px;
+            font-size: 1.2rem;
+            line-height: 1.8;
+            padding: 50px;
             resize: none;
             outline: none;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            transition: border-color 0.2s;
+            border-radius: 12px;
+            box-shadow: inset 0 5px 20px rgba(0,0,0,0.5);
+            z-index: 5;
         }
+        textarea:focus { border-color: #333; }
+        textarea:disabled { opacity: 0.3; }
 
-        textarea:focus { border-color: var(--accent); }
-
-        .desk-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        /* Progress Bar */
+        .progress-container {
+            height: 4px;
+            background: #1a1a1a;
+            width: 100%;
+            margin-top: -4px; /* Tuck into bottom of textarea visual */
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+            z-index: 6;
         }
-
-        .word-count { font-family: var(--font-mono); opacity: 0.6; font-size: 0.9rem; }
-
-        .btn-publish {
+        .progress-fill {
+            height: 100%;
             background: var(--accent);
-            color: #000;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 6px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: transform 0.1s;
+            width: 0%;
+            transition: width 0.3s ease;
         }
-        .btn-publish:hover { transform: scale(1.02); }
-        .btn-publish:active { transform: scale(0.98); }
-        .btn-publish:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
+        .progress-fill.complete { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
 
-        /* --- RIGHT PANEL: THE TYCOON DASHBOARD --- */
+        .desk-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
+
+        /* --- DASHBOARD --- */
         .tycoon-panel {
-            flex: 1;
-            min-width: 350px;
-            background: #181818;
+            width: var(--dashboard-w);
+            background: #0d0d0d;
             display: flex;
             flex-direction: column;
+            border-left: 1px solid var(--border);
+            flex-shrink: 0;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 20;
+        }
+        
+        .tycoon-panel.collapsed {
+            transform: translateX(100%);
+            margin-left: -380px; /* Pull main content over */
         }
 
-        .stats-bar {
-            padding: 30px;
-            background: var(--panel);
-            border-bottom: 1px solid var(--border);
-        }
-
+        .stats-bar { padding: 30px; background: #111; border-bottom: 1px solid var(--border); flex-shrink: 0; }
         .stat-group { margin-bottom: 15px; }
-        .stat-label { font-size: 0.75rem; text-transform: uppercase; opacity: 0.5; letter-spacing: 1px; }
-        .stat-value { font-size: 2rem; font-weight: 700; color: var(--accent); font-family: var(--font-mono); }
-        .stat-sub { font-size: 0.9rem; opacity: 0.7; }
+        .stat-label { font-size: 0.65rem; text-transform: uppercase; opacity: 0.4; letter-spacing: 2px; margin-bottom: 5px; }
+        .stat-value { font-size: 2rem; font-weight: 800; color: var(--accent); font-family: var(--font-mono); }
+        .stat-value.debt { color: var(--danger); }
+        .royalty-ticker { font-family: var(--font-mono); font-size: 0.8rem; color: var(--gold); animation: pulse 2s infinite; }
+        
+        .shop-section { flex: 1; padding: 25px; overflow-y: auto; min-height: 0; }
+        .section-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); opacity: 0.5; color: #888; }
 
-        .shop-section {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
+        .history-wrapper { flex-shrink: 0; background: #080808; border-top: 1px solid var(--border); padding: 0; display: flex; flex-direction: column; max-height: 35%; }
+        .log-section { height: 200px; padding: 0 25px 25px 25px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.8rem; }
 
-        .section-title {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 15px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid var(--border);
-            opacity: 0.6;
-        }
-
-        .upgrade-card {
-            background: var(--panel);
+        /* --- FLOATING TOGGLES --- */
+        /* These are now direct children of BODY, so they won't get clipped */
+        .side-toggle {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px; height: 44px;
+            background: #1a1a1a;
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            color: var(--accent);
             cursor: pointer;
-            transition: all 0.2s;
+            z-index: 50; /* Higher than panels */
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        .side-toggle:hover { background: #222; color: #fff; border-color: var(--accent); transform: translateY(-50%) scale(1.1); }
 
-        .upgrade-card:hover:not(.disabled) { border-color: var(--accent); background: var(--accent-dim); }
-        .upgrade-card.disabled { opacity: 0.5; cursor: not-allowed; }
+        #left-toggle { left: 260px; } /* Sidebar width - 20px overlap */
+        #left-toggle.collapsed { left: -22px; background: var(--accent); color: #000; }
+        #left-toggle.collapsed:hover { left: 5px; }
 
-        .upgrade-info h4 { margin: 0 0 5px 0; font-size: 1rem; }
-        .upgrade-info p { margin: 0; font-size: 0.8rem; opacity: 0.6; }
-        .upgrade-cost { font-family: var(--font-mono); font-weight: bold; color: var(--accent); }
+        #right-toggle { right: 360px; } /* Dash width - 20px overlap */
+        #right-toggle.collapsed { right: -22px; background: var(--accent); color: #000; }
+        #right-toggle.collapsed:hover { right: 5px; }
 
-        /* --- LOG / FEEDBACK AREA --- */
-        .log-section {
-            height: 200px;
-            padding: 20px;
-            border-top: 1px solid var(--border);
-            background: #0f0f0f;
-            overflow-y: auto;
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-        }
+        /* ... existing components ... */
+        .upgrade-card { background: #141414; border: 1px solid #1a1a1a; border-radius: 8px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; }
+        .upgrade-card:hover:not(.disabled) { border-color: var(--accent); background: #1a1a1a; }
+        .upgrade-card.disabled { opacity: 0.4; cursor: not-allowed; }
+        .upgrade-info h4 { margin: 0; font-size: 0.9rem; color: #fff; }
+        .upgrade-info p { margin: 0; font-size: 0.75rem; opacity: 0.5; }
 
-        .log-entry { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #333; }
+        .log-entry { margin-bottom: 12px; border-bottom: 1px dashed #1a1a1a; padding-bottom: 8px; }
         .log-entry.success { color: var(--accent); }
-        .log-entry.fail { color: #ef4444; }
-        .log-entry .meta { opacity: 0.5; font-size: 0.75rem; margin-bottom: 4px; }
+        .log-entry.fail { color: var(--danger); }
+        .log-entry.milestone { color: var(--gold); border-bottom: 1px solid var(--gold); }
+        .log-meta { font-size: 0.7rem; opacity: 0.3; text-transform: uppercase; margin-bottom: 4px; }
 
-        /* --- NOTIFICATIONS --- */
-        .toast {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--accent);
-            color: black;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-weight: bold;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s, transform 0.3s;
-        }
-        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.96); backdrop-filter: blur(12px); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+        .card-panel { background: #0a0a0a; width: 750px; max-width: 95%; border: 1px solid #1a1a1a; border-radius: 12px; padding: 40px; box-shadow: 0 40px 80px rgba(0,0,0,1); max-height: 90vh; display: flex; flex-direction: column; }
+
+        .job-card { background: #141414; border: 1px solid #222; padding: 20px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .job-card:hover:not(.on-cooldown) { border-color: var(--accent); background: #181818; transform: translateY(-2px); }
+        .job-card.milestone { border-left: 5px solid var(--accent); background: #1a1e1a; }
+        .job-card.on-cooldown { opacity: 0.4; cursor: not-allowed; }
+
+        .tag { font-size: 0.65rem; padding: 3px 8px; border-radius: 4px; background: #222; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-right: 5px; }
+        .tag.milestone-tag { color: var(--accent); border: 1px solid var(--accent-dim); background: var(--accent-dim); }
+
+        .btn-primary { background: var(--accent); color: #000; border: 1px solid var(--accent); padding: 12px 25px; border-radius: 8px; font-weight: 800; text-transform: uppercase; cursor: pointer; font-size: 0.85rem; letter-spacing: 1px; transition: 0.2s; }
+        .btn-primary:hover:not(:disabled) { transform: scale(1.05); }
+        .btn-primary:disabled { background: #1a1a1a; color: #444; border-color: #222; cursor: not-allowed; }
+        
+        .btn-gold { background: var(--gold); color: #000; border: 1px solid var(--gold); padding: 10px; border-radius: 6px; font-weight: 800; text-transform: uppercase; cursor: pointer; font-size: 0.7rem; width: 100%; margin-top: 10px; }
+        .btn-gold:hover { transform: scale(1.02); filter: brightness(1.1); }
+
+        .reviewing-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200; border-radius: 12px; display: none; }
+        .loader { width: 50px; height: 50px; border: 5px solid #222; border-bottom-color: var(--accent); border-radius: 50%; animation: rotation 1s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .specialty-index { display: flex; flex-direction: column; width: 100%; margin-top: 10px; }
+        .spec-item { display: flex; align-items: baseline; width: 100%; background: none; border: none; padding: 15px 0; color: #fff; cursor: pointer; font-family: var(--font-mono); text-align: left; transition: all 0.2s; outline: none; }
+        .spec-item:hover { color: var(--accent); }
+        .spec-dots { flex: 1; border-bottom: 1px dotted #333; margin: 0 15px; height: 12px; transition: border-color 0.2s; }
+        .spec-item:hover .spec-dots { border-color: var(--accent); opacity: 0.3; }
+        .spec-num { opacity: 0.4; margin-right: 15px; font-size: 0.8rem; }
+        .spec-title { font-weight: bold; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 2px; }
+        .spec-desc { font-size: 0.7rem; opacity: 0.4; text-transform: uppercase; letter-spacing: 1px; }
+
+        .critique-card { background: #1a1a1a; width: 450px; padding: 30px; border-radius: 12px; text-align: center; border: 1px solid #333; }
+        .modal-scroll-area { overflow-y: auto; flex: 1; padding-right: 15px; margin-bottom: 10px; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #333; }
     </style>
 </head>
 <body>
 
+    <!-- FLOATING TOGGLES -->
+    <button id="left-toggle" class="side-toggle" onclick="toggleSidebar()">◂</button>
+    <button id="right-toggle" class="side-toggle" onclick="toggleDashboard()">▸</button>
+
+    <!-- SIDEBAR -->
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 3px; opacity: 0.4; margin-bottom: 8px;">Manuscript</div>
+            <div id="project-display-name" style="font-weight: 900; font-family: var(--font-mono); color: var(--accent); font-size: 1.1rem;">-</div>
+            <div id="project-type-tag" style="font-size: 0.65rem; opacity: 0.3; margin-top: 5px;">-</div>
+            <div id="project-actions" style="margin-top: 20px;">
+                <button onclick="exportManuscript()" style="width:100%; font-size:0.7rem; padding:10px; background:#111; border:1px solid #222; color:#888; cursor:pointer; border-radius:6px; font-weight: bold; text-transform: uppercase;">Export .MD</button>
+            </div>
+        </div>
+        <div id="manuscript-list" class="manuscript-list"></div>
+    </div>
+
+    <!-- MAIN DESK -->
     <div class="desk-panel">
+        <div id="review-overlay" class="reviewing-overlay">
+            <span class="loader"></span>
+            <p style="margin-top:25px; font-family:var(--font-mono); color:var(--accent); text-transform:uppercase; letter-spacing:3px; font-weight: bold;">Reviewing Submission...</p>
+        </div>
+
         <div class="desk-header">
-            <h1>Writer Tycoon <span style="font-size:0.5em; opacity:0.5;">v0.1</span></h1>
-            <div id="multiplier-badge" style="font-size: 0.8rem; opacity: 0.7;">Rate: $0.10/word</div>
+            <div style="display:flex; align-items:center;">
+                <h1>Writer Tycoon</h1>
+                <span id="project-label" class="project-label">SELECT PROJECT</span>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <div id="rep-badge" style="font-size: 0.8rem; opacity: 0.8; font-family: var(--font-mono); font-weight: bold; color:var(--gold); display:none;">Rep: 0</div>
+                <div id="multiplier-badge" style="font-size: 0.8rem; opacity: 0.6; font-family: var(--font-mono); font-weight: bold; background: #111; padding: 5px 12px; border-radius: 20px;">1.00x</div>
+            </div>
         </div>
         
-        <textarea id="editor" placeholder="Start writing your masterpiece here... (Minimum 20 words to publish)"></textarea>
+        <div id="active-job-bar" class="active-job-display" style="display:none;">
+            <div style="display:flex; align-items:center;">
+                <span class="tag" style="background:var(--accent); color:#000; font-weight:bold; margin-right:12px;">ACTIVE</span>
+                <span id="current-job-target" style="color:#fff; font-weight:bold;">-</span>
+            </div>
+            <button onclick="cancelJob()" style="background:none; border:none; color:#555; cursor:pointer; font-size:0.75rem; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">✕ Cancel</button>
+        </div>
+        
+        <div class="editor-wrapper">
+            <textarea id="editor" placeholder="Consult the Job Board to begin writing..."></textarea>
+            <div class="progress-container">
+                <div id="progress-bar" class="progress-fill"></div>
+            </div>
+        </div>
         
         <div class="desk-controls">
-            <div class="word-count">Words: <span id="word-count">0</span></div>
-            <button id="btn-publish" class="btn-publish" disabled>Publish Draft</button>
+            <div style="font-family: var(--font-mono); opacity: 0.4; font-size: 0.85rem;">Word Count: <span id="word-count" style="color:#fff; font-weight:bold;">0</span></div>
+            <button id="btn-publish" class="btn-primary" disabled onclick="handlePublishClick()">Consult Job Board</button>
         </div>
     </div>
 
-    <div class="tycoon-panel">
-        
+    <!-- TYCOON PANEL -->
+    <div id="dashboard" class="tycoon-panel">
         <div class="stats-bar">
             <div class="stat-group">
-                <div class="stat-label">Bank Balance</div>
-                <div class="stat-value">$<span id="bank-balance">0.00</span></div>
+                <div class="stat-label">Net Worth</div>
+                <div id="bank-balance" class="stat-value">$0.00</div>
+                <div id="royalty-display" class="royalty-ticker" style="margin-top:5px; opacity:0;">+ $0.00 / 5s</div>
             </div>
-            <div class="stat-group">
-                <div class="stat-label">Career Stats</div>
-                <div class="stat-sub">Published: <span id="total-published">0</span> | Words: <span id="total-words">0</span></div>
+            <div style="display:flex; justify-content:space-between; margin-top:20px;">
+                <div><div class="stat-label">Project Status</div><div id="total-published" style="font-weight:bold; font-family:var(--font-mono);">0 Parts</div></div>
+                <div><div class="stat-label">Lifetime Words</div><div id="total-words" style="font-weight:bold; font-family:var(--font-mono);">0</div></div>
             </div>
         </div>
 
         <div class="shop-section">
-            <div class="section-title">Office Upgrades</div>
-            <div id="shop-container">
-                </div>
+            <div class="section-title">Supplies & Hype</div>
+            <div id="shop-container"></div>
         </div>
 
-        <div class="log-section" id="game-log">
-            <div class="log-entry"><span class="meta">SYSTEM</span><br>Welcome to your new career. Start writing to earn money.</div>
+        <div class="history-wrapper">
+            <div class="section-title" style="margin-bottom: 0; padding: 15px 25px 10px 25px; border-top: 1px solid var(--border);">Career History</div>
+            <div class="log-section" id="game-log"></div>
         </div>
     </div>
 
-    <div id="toast" class="toast">Published!</div>
+    <!-- MODALS -->
+    <div id="setup-modal" class="modal-overlay">
+        <div class="card-panel" style="width:600px;">
+            <h2 style="letter-spacing:8px; border-bottom:1px solid #1a1a1a; padding-bottom:20px; margin:0 0 30px 0; text-align: center; font-weight: 900;">MANIFESTO</h2>
+            <div class="modal-scroll-area">
+                <div style="margin-bottom:40px;">
+                    <label style="font-size:0.65rem; text-transform:uppercase; color:#444; display:block; margin-bottom:12px; letter-spacing: 2px; font-weight: bold;">0.1 / Working Title</label>
+                    <input id="new-project-name" type="text" placeholder="Draft title..." autocomplete="off" style="width:100%; background:#050505; border:1px solid #1a1a1a; color:var(--accent); padding:18px; font-family:var(--font-mono); outline:none; border-radius:4px; font-size: 1.1rem; border-left: 4px solid var(--accent);">
+                </div>
+                <p style="color:#444; font-family:var(--font-mono); font-size:0.65rem; text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; font-weight: bold;">0.2 / Select Discipline</p>
+                <div class="specialty-index">
+                    <button class="spec-item" onclick="startProject('Novel')"><span class="spec-num">01.</span><span class="spec-title">Novelist</span><span class="spec-dots"></span><span class="spec-desc">Chapters</span></button>
+                    <button class="spec-item" onclick="startProject('Screenplay')"><span class="spec-num">02.</span><span class="spec-title">Screenwriter</span><span class="spec-dots"></span><span class="spec-desc">Scenes</span></button>
+                    <button class="spec-item" onclick="startProject('Play')"><span class="spec-num">03.</span><span class="spec-title">Playwright</span><span class="spec-dots"></span><span class="spec-desc">Acts</span></button>
+                    <button class="spec-item" onclick="startProject('Poetry')"><span class="spec-num">04.</span><span class="spec-title">Poet</span><span class="spec-dots"></span><span class="spec-desc">Verse</span></button>
+                    <button class="spec-item" onclick="startProject('Sketch Comedy')"><span class="spec-num">05.</span><span class="spec-title">Sketch Comedy</span><span class="spec-dots"></span><span class="spec-desc">Sketches</span></button>
+                    <button class="spec-item" onclick="startProject('Essay')"><span class="spec-num">06.</span><span class="spec-title">Essayist</span><span class="spec-dots"></span><span class="spec-desc">Articles</span></button>
+                </div>
+            </div>
+            <div style="margin-top:20px; border-top:1px solid #111; padding-top:20px; text-align: right; opacity: 0.2; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 2px;">
+                SYSTEMS ONLINE / PROJECT INITIATION v2.0
+            </div>
+        </div>
+    </div>
+
+    <div id="job-modal" class="modal-overlay">
+        <div class="card-panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+                <h2 style="margin:0; font-size:1.4rem; letter-spacing:4px; font-weight: 900;">JOB BOARD</h2>
+                <button onclick="toggleJobBoard()" style="background:none; border:none; color:#444; font-size:2rem; cursor:pointer;">×</button>
+            </div>
+            <div id="job-list" style="overflow-y:auto; flex:1; padding-right:10px;"></div>
+        </div>
+    </div>
+
+    <div id="critique-modal" class="modal-overlay" onclick="closeCritique()">
+        <div class="critique-card" onclick="event.stopPropagation()">
+            <div style="font-size:0.65rem; letter-spacing:3px; color:#555; text-transform:uppercase; font-weight: bold; margin-bottom: 10px;">Evaluation Report</div>
+            <div id="critique-score" style="font-size:5rem; font-weight:900; font-family:var(--font-mono); margin:10px 0;">0.0</div>
+            <div id="critique-text" style="font-size:1.1rem; margin:25px 0; color:#aaa; line-height:1.7; font-style:italic;"></div>
+            <div id="critique-earnings" style="font-family:var(--font-mono); font-size:1.8rem; background:#000; padding:20px; border-radius:10px; margin-bottom:30px; border:1px solid #111;"></div>
+            <button class="btn-primary" style="width:100%" onclick="closeCritique()">Keep Writing</button>
+        </div>
+    </div>
+
+    <div id="archive-modal" class="modal-overlay" onclick="closeArchive()">
+        <div class="card-panel" onclick="event.stopPropagation()">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 id="archive-title" style="margin:0; font-size:1rem; color:var(--accent); font-family:var(--font-mono);">Archived Part</h2>
+                <button onclick="closeArchive()" style="background:none; border:none; color:#444; font-size:2rem; cursor:pointer;">×</button>
+            </div>
+            <div id="archive-content" class="archive-card"></div>
+        </div>
+    </div>
 
 <script>
-    // --- GAME STATE ---
+    const apiKey = ""; 
+
     const GAME = {
-        cash: 0,
-        totalWords: 0,
-        publishedCount: 0,
-        baseRate: 0.10, // Cents per word
-        multiplier: 1.0,
-        upgrades: {
-            keyboard: 0,
-            coffee: 0,
-            chair: 0
-        }
+        cash: 0, totalWords: 0, publishedCount: 0, multiplier: 1.0,
+        specialty: null, projectName: "", manuscript: [], 
+        reputation: 0, royaltiesPerTick: 0,
+        ui: { sidebarCollapsed: false, dashboardCollapsed: false },
+        cooldowns: {}, upgrades: { pen: 0, notebook: 0, lamp: 0, keyboard: 0, coffee: 0, chair: 0, marketing: 0 }
     };
 
-    // --- CONFIGURATION ---
-    const MIN_WORDS_TO_PUBLISH = 20;
-
     const UPGRADES = [
-        {
-            id: 'keyboard',
-            name: 'Mechanical Keyboard',
-            desc: 'Increases earning multiplier by +0.2x',
-            baseCost: 50,
-            costMult: 1.8,
-            effect: () => { GAME.multiplier += 0.2; }
-        },
-        {
-            id: 'coffee',
-            name: 'Espresso Machine',
-            desc: 'Boosts base rate by +$0.05',
-            baseCost: 150,
-            costMult: 2.0,
-            effect: () => { GAME.baseRate += 0.05; }
-        },
-        {
-            id: 'chair',
-            name: 'Ergonomic Chair',
-            desc: 'Work comfort. +0.5x Multiplier',
-            baseCost: 500,
-            costMult: 2.5,
-            effect: () => { GAME.multiplier += 0.5; }
-        }
+        { id: 'pen', name: 'Ballpoint Pen', desc: 'Reliable flow. +0.05x', baseCost: 15, costMult: 1.4, boost: 0.05 },
+        { id: 'notebook', name: 'Lined Notebook', desc: 'Space to think. +0.10x', baseCost: 45, costMult: 1.5, boost: 0.10 },
+        { id: 'lamp', name: 'Desk Lamp', desc: 'Late night clarity. +0.15x', baseCost: 100, costMult: 1.6, boost: 0.15 },
+        { id: 'keyboard', name: 'Mechanical Keyboard', desc: 'Tactile feel. +0.2x', baseCost: 250, costMult: 1.8, boost: 0.20 },
+        { id: 'coffee', name: 'Espresso Machine', desc: 'Caffeine boost. +0.30x', baseCost: 800, costMult: 2.0, boost: 0.30 },
+        { id: 'chair', name: 'Ergonomic Chair', desc: 'Work in comfort. +0.5x', baseCost: 2000, costMult: 2.5, boost: 0.50 },
+        { id: 'marketing', name: 'Publicist', desc: 'Hype machine. +1.0x', baseCost: 10000, costMult: 3.0, boost: 1.00 }
     ];
 
-    // --- DOM ELEMENTS ---
+    const JOBS = [
+        { id: 'g_any', type: 'Any', title: 'Tweet Storm', brief: 'Quick punchy thoughts.', diff: 'Easy', payout: 5, minWords: 15, cooldown: 0 },
+        { id: 'p1', type: 'Poetry', title: 'Haiku', brief: 'Nature imagery.', diff: 'Easy', payout: 30, minWords: 5, cooldown: 30000 },
+        { id: 'p2', type: 'Poetry', title: 'Limerick', brief: 'Funny wordplay.', diff: 'Easy', payout: 50, minWords: 20, cooldown: 45000 },
+        { id: 'p3', type: 'Poetry', title: 'Sonnet', brief: 'Classical structure.', diff: 'Med', payout: 250, minWords: 100, cooldown: 0 },
+        { id: 'n1', type: 'Novel', title: 'Character Sketch', brief: 'Physical description.', diff: 'Easy', payout: 60, minWords: 50, cooldown: 30000 },
+        { id: 'n2', type: 'Novel', title: 'Mood Piece', brief: 'Set the atmosphere.', diff: 'Easy', payout: 80, minWords: 75, cooldown: 45000 },
+        { id: 's1', type: 'Screenplay', title: 'Logline', brief: 'Movie elevator pitch.', diff: 'Easy', payout: 40, minWords: 15, cooldown: 30000 },
+        { id: 's2', type: 'Screenplay', title: 'Conflict Scene', brief: 'Sharp dialogue tension.', diff: 'Easy', payout: 70, minWords: 60, cooldown: 45000 },
+        { id: 'sk1', type: 'Sketch Comedy', title: 'Cold Open', brief: 'Topical political satire.', diff: 'Easy', payout: 45, minWords: 40, cooldown: 30000 },
+        { id: 'sk2', type: 'Sketch Comedy', title: 'Commercial Parody', brief: 'Pitch a weird product.', diff: 'Easy', payout: 65, minWords: 60, cooldown: 45000 },
+        { id: 'sk3', type: 'Sketch Comedy', title: 'Character Piece', brief: 'Wacky person in a normal place.', diff: 'Med', payout: 150, minWords: 120, cooldown: 0 },
+        { id: 'pl1', type: 'Play', title: 'Soliloquy', brief: 'Inner thought reveal.', diff: 'Easy', payout: 50, minWords: 40, cooldown: 30000 },
+        { id: 'e1', type: 'Essay', title: 'Blog Post', brief: 'Opinionated listicle.', diff: 'Easy', payout: 50, minWords: 50, cooldown: 30000 }
+    ];
+
     const editor = document.getElementById('editor');
     const wordCountDisplay = document.getElementById('word-count');
     const btnPublish = document.getElementById('btn-publish');
     const bankDisplay = document.getElementById('bank-balance');
-    const publishedDisplay = document.getElementById('total-published');
-    const totalWordsDisplay = document.getElementById('total-words');
-    const shopContainer = document.getElementById('shop-container');
-    const logContainer = document.getElementById('game-log');
-    const multiplierBadge = document.getElementById('multiplier-badge');
+    const progressBar = document.getElementById('progress-bar');
 
-    // --- INITIALIZATION ---
     function init() {
         loadGame();
-        renderStats();
-        renderShop();
+        if (!GAME.specialty) { document.getElementById('setup-modal').classList.add('open'); editor.disabled = true; } 
+        else { refreshUI(); }
         
+        applyUIState();
+
+        if (document.getElementById('game-log').children.length === 0) {
+            log('SYSTEM INITIALIZED', 'Literary engine online. Waiting for draft...', false);
+        }
+
         editor.addEventListener('input', handleInput);
-        btnPublish.addEventListener('click', publishWork);
-        
-        // Auto-save every 10 seconds
-        setInterval(saveGame, 10000);
+        setInterval(() => { 
+            saveGame(); 
+            if (document.getElementById('job-modal').classList.contains('open')) renderJobBoard(); 
+        }, 1000);
+
+        setInterval(() => {
+            if (GAME.royaltiesPerTick > 0) {
+                GAME.cash += GAME.royaltiesPerTick;
+                renderStats();
+            }
+        }, 5000);
     }
 
-    // --- CORE LOGIC ---
+    function toggleSidebar() {
+        GAME.ui.sidebarCollapsed = !GAME.ui.sidebarCollapsed;
+        applyUIState();
+        saveGame();
+    }
+
+    function toggleDashboard() {
+        GAME.ui.dashboardCollapsed = !GAME.ui.dashboardCollapsed;
+        applyUIState();
+        saveGame();
+    }
+
+    function applyUIState() {
+        document.getElementById('sidebar').classList.toggle('collapsed', !!GAME.ui.sidebarCollapsed);
+        document.getElementById('left-toggle').innerText = GAME.ui.sidebarCollapsed ? '▸' : '◂';
+        document.getElementById('left-toggle').classList.toggle('collapsed', !!GAME.ui.sidebarCollapsed);
+        
+        document.getElementById('dashboard').classList.toggle('collapsed', !!GAME.ui.dashboardCollapsed);
+        document.getElementById('right-toggle').innerText = GAME.ui.dashboardCollapsed ? '◂' : '▸';
+        document.getElementById('right-toggle').classList.toggle('collapsed', !!GAME.ui.dashboardCollapsed);
+    }
+
+    function startProject(spec) {
+        const titleInput = document.getElementById('new-project-name');
+        const title = titleInput.value.trim() || "UNTITLED PROJECT";
+        GAME.specialty = spec;
+        GAME.projectName = title;
+        GAME.manuscript = [];
+        document.getElementById('setup-modal').classList.remove('open');
+        refreshUI();
+        log('MANIFESTO BEGUN', `${title} (${spec}) project initiated.`, 'milestone');
+        saveGame();
+    }
+
+    function refreshUI() {
+        editor.disabled = false;
+        document.getElementById('project-label').innerText = `${GAME.projectName}`;
+        document.getElementById('project-display-name').innerText = GAME.projectName;
+        document.getElementById('project-type-tag').innerText = GAME.specialty.toUpperCase();
+        
+        const actionsDiv = document.getElementById('project-actions');
+        if (GAME.manuscript.length >= 3) {
+            actionsDiv.innerHTML = `
+                <button onclick="completeProject()" class="btn-gold">PUBLISH BOOK</button>
+                <button onclick="exportManuscript()" style="width:100%; font-size:0.6rem; padding:8px; background:none; border:none; color:#666; cursor:pointer; margin-top:5px;">EXPORT .MD</button>
+            `;
+        } else {
+            actionsDiv.innerHTML = `<button onclick="exportManuscript()" style="width:100%; font-size:0.7rem; padding:10px; background:#111; border:1px solid #222; color:#888; cursor:pointer; border-radius:6px; font-weight: bold; text-transform: uppercase;">Export .MD</button>`;
+        }
+
+        renderManuscript();
+        renderStats();
+        renderShop();
+        handleInput();
+    }
+
     function handleInput() {
         const text = editor.value.trim();
         const words = text ? text.split(/\s+/).length : 0;
-        
         wordCountDisplay.innerText = words;
         
-        if (words >= MIN_WORDS_TO_PUBLISH) {
-            btnPublish.disabled = false;
-            btnPublish.innerText = `Publish (${words} words)`;
-        } else {
-            btnPublish.disabled = true;
-            btnPublish.innerText = `Need ${MIN_WORDS_TO_PUBLISH - words} more words`;
+        if (GAME.currentJob) {
+            const target = GAME.currentJob.minWords;
+            const remaining = Math.max(0, target - words);
+            
+            // Progress Bar Logic
+            const percent = Math.min(100, (words / target) * 100);
+            progressBar.style.width = `${percent}%`;
+            
+            if (remaining === 0) { 
+                btnPublish.innerText = "Submit Part"; 
+                btnPublish.disabled = false; 
+                btnPublish.style.background = "var(--accent)"; 
+                btnPublish.style.color = "#000";
+                btnPublish.style.borderColor = "var(--accent)";
+                progressBar.classList.add('complete');
+            } else { 
+                btnPublish.innerText = `${remaining} WORDS LEFT`; 
+                btnPublish.disabled = true; 
+                btnPublish.style.background = "#1a1a1a"; 
+                btnPublish.style.color = "#444";
+                btnPublish.style.borderColor = "#222";
+                progressBar.classList.remove('complete');
+            }
+        } else { 
+            btnPublish.innerText = "Consult Job Board"; 
+            btnPublish.disabled = false; 
+            btnPublish.style.background = "transparent"; 
+            btnPublish.style.color = "var(--accent)";
+            btnPublish.style.borderColor = "var(--accent)";
+            progressBar.style.width = "0%";
         }
     }
 
-    function publishWork() {
+    function handlePublishClick() {
+        if (!GAME.currentJob) toggleJobBoard();
+        else publishWork();
+    }
+
+    async function callGeminiEvaluation(text, job) {
+        const context = GAME.manuscript.length > 0 ? `The previous parts were: ${GAME.manuscript.map(m => m.title).join(', ')}.` : "This is the start.";
+        const careerPhase = GAME.manuscript.length < 4 ? "early discovery stage" : "professional development stage";
+        const systemPrompt = `You are a professional editor evaluating a ${GAME.specialty} submission for "${GAME.projectName}". Phase: ${careerPhase}. Goal: ${job.title} - ${job.brief}. Context: ${context}. Score quality 1.0 to 10.0. Return ONLY JSON: { "score": number, "critique": "one sentence feedback" }`;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: `Text:\n\n${text}` }] }], systemInstruction: { parts: [{ text: systemPrompt }] }, generationConfig: { responseMimeType: "application/json" }})
+            });
+            const data = await response.json();
+            return JSON.parse(data.candidates[0].content.parts[0].text);
+        } catch (e) { return null; }
+    }
+
+    async function publishWork() {
         const text = editor.value.trim();
+        const job = GAME.currentJob;
         const words = text.split(/\s+/).length;
-
-        // MOCK AI EVALUATION
-        // In Phase 2, this will be an API call
-        const qualityScore = (Math.floor(Math.random() * 5) + 6) / 10; // Random 0.6 to 1.0
-        const earnings = (words * GAME.baseRate * GAME.multiplier * qualityScore);
-
-        // Update State
-        GAME.cash += earnings;
-        GAME.totalWords += words;
-        GAME.publishedCount++;
-
-        // Feedback
-        log(`Published "${text.substring(0, 20)}..."`, 
-            `Score: ${(qualityScore*10).toFixed(1)}/10 | Earned: $${earnings.toFixed(2)}`, 
-            true);
-        
-        showToast(`Earned $${earnings.toFixed(2)}`);
-
-        // Reset
-        editor.value = '';
-        handleInput();
-        saveGame();
-        renderStats();
-        renderShop(); // Update button states
+        document.getElementById('review-overlay').style.display = 'flex';
+        const aiResult = await callGeminiEvaluation(text, job) || { score: (Math.random() * 9 + 1).toFixed(1), critique: "Editor reviewed this offline." };
+        document.getElementById('review-overlay').style.display = 'none';
+        const score = parseFloat(aiResult.score);
+        const quality = score / 10;
+        let earnings = (score <= 1.0) ? -(job.payout * 0.2) : (score < 4.0 ? 0 : (job.payout * GAME.multiplier * quality));
+        GAME.cash += earnings; GAME.totalWords += words; GAME.publishedCount++;
+        if (job.isMilestone) { GAME.manuscript.push({ title: job.title, text: text, score: aiResult.score, date: new Date().toLocaleDateString() }); updateRoyalties(); }
+        if (job.cooldown) GAME.cooldowns[job.id] = Date.now() + job.cooldown;
+        showCritiqueModal(aiResult.score, aiResult.critique, earnings);
+        log(`${job.title} SUBMISSION`, `${aiResult.critique} (Score: ${aiResult.score})`, earnings > 0 ? 'success' : 'fail');
+        GAME.currentJob = null; document.getElementById('active-job-bar').style.display = 'none'; editor.value = ''; refreshUI();
     }
 
-    function buyUpgrade(upgradeIndex) {
-        const item = UPGRADES[upgradeIndex];
-        const currentLevel = GAME.upgrades[item.id];
-        const cost = Math.floor(item.baseCost * Math.pow(item.costMult, currentLevel));
-
-        if (GAME.cash >= cost) {
-            GAME.cash -= cost;
-            GAME.upgrades[item.id]++;
-            item.effect(); // Apply boost
-            
-            log(`Purchased ${item.name}`, `Wallet -${cost}`, true);
-            saveGame();
-            renderStats();
-            renderShop();
-        } else {
-            log(`Cannot afford ${item.name}`, `Need $${cost.toFixed(2)}`, false);
-        }
+    function completeProject() {
+        if (!confirm("Publish this project? Soft reset will follow.")) return;
+        const avgScore = GAME.manuscript.reduce((sum, m) => sum + parseFloat(m.score), 0) / GAME.manuscript.length;
+        const bonus = 500 * avgScore * GAME.multiplier;
+        GAME.cash += bonus; GAME.reputation += Math.floor(avgScore * 2);
+        log('PROJECT COMPLETED', `${GAME.projectName} published! Earned $${bonus.toFixed(2)}`, 'milestone');
+        GAME.manuscript = []; GAME.projectName = ""; GAME.specialty = null; GAME.currentJob = null; GAME.royaltiesPerTick = 0;
+        recalculateMultiplier(); saveGame();
+        document.getElementById('active-job-bar').style.display = 'none'; editor.value = ''; editor.disabled = true;
+        document.getElementById('new-project-name').value = ''; document.getElementById('setup-modal').classList.add('open');
+        refreshUI();
     }
 
-    // --- RENDERING ---
-    function renderStats() {
-        bankDisplay.innerText = GAME.cash.toFixed(2);
-        publishedDisplay.innerText = GAME.publishedCount;
-        totalWordsDisplay.innerText = GAME.totalWords;
-        multiplierBadge.innerText = `Rate: $${GAME.baseRate.toFixed(2)}/word x ${GAME.multiplier.toFixed(1)}`;
+    function updateRoyalties() {
+        let r = 0; GAME.manuscript.forEach(m => { r += (parseFloat(m.score) * 0.05); });
+        GAME.royaltiesPerTick = r;
     }
 
-    function renderShop() {
-        shopContainer.innerHTML = '';
-        
-        UPGRADES.forEach((item, index) => {
-            const currentLevel = GAME.upgrades[item.id];
-            const cost = Math.floor(item.baseCost * Math.pow(item.costMult, currentLevel));
-            const canAfford = GAME.cash >= cost;
-
-            const div = document.createElement('div');
-            div.className = `upgrade-card ${canAfford ? '' : 'disabled'}`;
-            div.onclick = () => { if(canAfford) buyUpgrade(index); };
-            
-            div.innerHTML = `
-                <div class="upgrade-info">
-                    <h4>${item.name} <span style="font-size:0.7em; opacity:0.5">Lvl ${currentLevel}</span></h4>
-                    <p>${item.desc}</p>
-                </div>
-                <div class="upgrade-cost">$${cost.toLocaleString()}</div>
-            `;
-            shopContainer.appendChild(div);
+    function renderManuscript() {
+        const list = document.getElementById('manuscript-list');
+        list.innerHTML = '';
+        GAME.manuscript.forEach((m, idx) => {
+            const el = document.createElement('div');
+            el.className = 'manuscript-item';
+            el.onclick = () => showArchive(m);
+            el.innerHTML = `<div class="m-title">#${idx+1} ${m.title}</div><div class="m-meta"><span>${m.date}</span><span>${m.score}/10</span></div>`;
+            list.prepend(el);
         });
     }
 
-    function log(title, detail, success) {
-        const entry = document.createElement('div');
-        entry.className = `log-entry ${success ? 'success' : 'fail'}`;
-        entry.innerHTML = `<div class="meta">${new Date().toLocaleTimeString()}</div><strong>${title}</strong><br>${detail}`;
-        logContainer.prepend(entry);
+    function renderJobBoard() {
+        const list = document.getElementById('job-list'); list.innerHTML = '';
+        const milestoneNum = GAME.manuscript.length + 1;
+        const milestoneNames = { 'Novel': 'Chapter', 'Screenplay': 'Scene', 'Play': 'Act', 'Poetry': 'Verse', 'Essay': 'Segment', 'Sketch Comedy': 'Sketch' };
+        const mName = milestoneNames[GAME.specialty] || "Part";
+        const milestoneJob = { id: 'm_current', isMilestone: true, title: `${mName} ${milestoneNum}`, brief: `Next milestone.`, payout: 100 + (milestoneNum * 20), minWords: 150 + (milestoneNum * 50) };
+        const filteredSideJobs = JOBS.filter(j => j.type === 'Any' || j.type === GAME.specialty);
+        [milestoneJob, ...filteredSideJobs].forEach(job => {
+            const readyAt = GAME.cooldowns[job.id] || 0;
+            const isOnCooldown = Date.now() < readyAt;
+            const el = document.createElement('div');
+            el.className = `job-card ${job.isMilestone ? 'milestone' : ''} ${isOnCooldown ? 'on-cooldown' : ''}`;
+            el.innerHTML = `<div><div style="font-weight:bold; color:#fff; display:flex; align-items:center;">${job.isMilestone ? '<span class="tag milestone-tag">PROJECT</span>' : ''}${job.title}</div><div style="font-size:0.75rem; opacity:0.5; margin-top:5px;">${job.brief}</div><div style="font-size:0.65rem; margin-top:10px; opacity:0.3;">Min: ${job.minWords} words</div></div><div style="text-align:right"><div style="font-family:var(--font-mono); font-weight:bold; color:var(--accent); font-size: 1.1rem; margin-bottom:10px;">$${(job.payout * GAME.multiplier).toFixed(0)}</div><button class="btn-primary" ${isOnCooldown ? 'disabled' : ''} onclick='acceptJob(${JSON.stringify(job).replace(/'/g, "&apos;")})'>${isOnCooldown ? `Wait` : 'Accept'}</button></div>`;
+            list.appendChild(el);
+        });
     }
 
-    function showToast(msg) {
-        const toast = document.getElementById('toast');
-        toast.innerText = msg;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2000);
-    }
+    function acceptJob(job) { GAME.currentJob = job; document.getElementById('job-modal').classList.remove('open'); document.getElementById('active-job-bar').style.display = 'flex'; document.getElementById('current-job-target').innerText = job.title; editor.placeholder = `Goal: ${job.brief}`; handleInput(); }
+    function toggleJobBoard() { document.getElementById('job-modal').classList.toggle('open'); if(document.getElementById('job-modal').classList.contains('open')) renderJobBoard(); }
+    function closeCritique() { document.getElementById('critique-modal').classList.remove('open'); }
+    function closeArchive() { document.getElementById('archive-modal').classList.remove('open'); }
+    function cancelJob() { if(editor.value.length > 50 && !confirm("Discard?")) return; GAME.currentJob = null; document.getElementById('active-job-bar').style.display = 'none'; handleInput(); }
+    function showCritiqueModal(s, t, e) { document.getElementById('critique-score').innerText = s; document.getElementById('critique-text').innerText = `"${t}"`; document.getElementById('critique-earnings').innerText = `${e >= 0 ? '+' : '-'}$${Math.abs(e).toFixed(2)}`; document.getElementById('critique-earnings').style.color = e > 0 ? 'var(--accent)' : (e < 0 ? 'var(--danger)' : '#666'); document.getElementById('critique-modal').classList.add('open'); }
+    function showArchive(m) { document.getElementById('archive-title').innerText = m.title; document.getElementById('archive-content').innerText = m.text; document.getElementById('archive-modal').classList.add('open'); }
+    function exportManuscript() { if (GAME.manuscript.length === 0) return; let output = `# ${GAME.projectName}\n\n`; GAME.manuscript.forEach(m => { output += `## ${m.title}\n\n${m.text}\n\n`; }); const blob = new Blob([output], { type: 'text/markdown' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${GAME.projectName}.md`; a.click(); }
+    function buyUpgrade(idx) { const item = UPGRADES[idx]; const lvl = GAME.upgrades[item.id] || 0; const cost = Math.floor(item.baseCost * Math.pow(item.costMult, lvl)); if (GAME.cash >= cost) { GAME.cash -= cost; GAME.upgrades[item.id]++; recalculateMultiplier(); saveGame(); refreshUI(); log('UPGRADE PURCHASED', `${item.name} acquired.`, 'success'); } }
+    function recalculateMultiplier() { let m = 1.0; UPGRADES.forEach(u => { m += (GAME.upgrades[u.id] || 0) * u.boost; }); m += (GAME.reputation || 0) * 0.05; GAME.multiplier = m; }
+    function renderStats() { document.getElementById('bank-balance').innerText = `$${GAME.cash.toLocaleString(undefined, {minimumFractionDigits: 2})}`; document.getElementById('total-published').innerText = `${GAME.manuscript.length} Parts`; document.getElementById('total-words').innerText = GAME.totalWords.toLocaleString(); document.getElementById('multiplier-badge').innerText = `${GAME.multiplier.toFixed(2)}x`; if (GAME.reputation > 0) { const r = document.getElementById('rep-badge'); r.style.display = 'block'; r.innerText = `Rep: ${GAME.reputation}`; } if (GAME.royaltiesPerTick > 0) { const r = document.getElementById('royalty-display'); r.style.opacity = 1; r.innerText = `+ $${GAME.royaltiesPerTick.toFixed(2)} / 5s`; } }
+    function renderShop() { const cont = document.getElementById('shop-container'); cont.innerHTML = ''; UPGRADES.forEach((u, i) => { const lvl = GAME.upgrades[u.id] || 0; const cost = Math.floor(u.baseCost * Math.pow(u.costMult, lvl)); const card = document.createElement('div'); card.className = `upgrade-card ${GAME.cash < cost ? 'disabled' : ''}`; card.onclick = () => buyUpgrade(i); card.innerHTML = `<div class="upgrade-info"><h4>${u.name} (Lvl ${lvl})</h4><p>${u.desc}</p></div><div style="font-weight:bold; color:var(--accent)">$${cost}</div>`; cont.appendChild(card); }); }
+    function log(t, d, type) { const entry = document.createElement('div'); entry.className = `log-entry ${type}`; entry.innerHTML = `<div class="log-meta">${new Date().toLocaleTimeString()}</div><strong>${t}</strong><br>${d}`; const logBox = document.getElementById('game-log'); logBox.prepend(entry); logBox.scrollTop = 0; }
+    function saveGame() { localStorage.setItem('WriterTycoon_v20', JSON.stringify(GAME)); }
+    function loadGame() { const saved = localStorage.getItem('WriterTycoon_v20'); if (saved) { Object.assign(GAME, JSON.parse(saved)); recalculateMultiplier(); updateRoyalties(); } }
 
-    // --- SAVE SYSTEM ---
-    function saveGame() {
-        localStorage.setItem('WriterTycoon_v1', JSON.stringify(GAME));
-    }
-
-    function loadGame() {
-        const saved = localStorage.getItem('WriterTycoon_v1');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            Object.assign(GAME, parsed); // Merge save into GAME object
-        }
-    }
-
-    // Start
     init();
-
 </script>
 </body>
 </html>
