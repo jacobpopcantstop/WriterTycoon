@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writer Tycoon (Prototype)</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --text: #e0e0e0;
+            --accent: #4ade80; /* Money Green */
+            --accent-dim: rgba(74, 222, 128, 0.1);
+            --border: #333;
+            --font-mono: "Courier New", monospace;
+            --font-ui: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-ui);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- LEFT PANEL: THE DESK --- */
+        .desk-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+            padding: 20px;
+        }
+
+        .desk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; }
+
+        textarea {
+            flex: 1;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            padding: 20px;
+            resize: none;
+            outline: none;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus { border-color: var(--accent); }
+
+        .desk-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .word-count { font-family: var(--font-mono); opacity: 0.6; font-size: 0.9rem; }
+
+        .btn-publish {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .btn-publish:hover { transform: scale(1.02); }
+        .btn-publish:active { transform: scale(0.98); }
+        .btn-publish:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
+
+        /* --- RIGHT PANEL: THE TYCOON DASHBOARD --- */
+        .tycoon-panel {
+            flex: 1;
+            min-width: 350px;
+            background: #181818;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stats-bar {
+            padding: 30px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stat-group { margin-bottom: 15px; }
+        .stat-label { font-size: 0.75rem; text-transform: uppercase; opacity: 0.5; letter-spacing: 1px; }
+        .stat-value { font-size: 2rem; font-weight: 700; color: var(--accent); font-family: var(--font-mono); }
+        .stat-sub { font-size: 0.9rem; opacity: 0.7; }
+
+        .shop-section {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .section-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border);
+            opacity: 0.6;
+        }
+
+        .upgrade-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upgrade-card:hover:not(.disabled) { border-color: var(--accent); background: var(--accent-dim); }
+        .upgrade-card.disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .upgrade-info h4 { margin: 0 0 5px 0; font-size: 1rem; }
+        .upgrade-info p { margin: 0; font-size: 0.8rem; opacity: 0.6; }
+        .upgrade-cost { font-family: var(--font-mono); font-weight: bold; color: var(--accent); }
+
+        /* --- LOG / FEEDBACK AREA --- */
+        .log-section {
+            height: 200px;
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            background: #0f0f0f;
+            overflow-y: auto;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+
+        .log-entry { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #333; }
+        .log-entry.success { color: var(--accent); }
+        .log-entry.fail { color: #ef4444; }
+        .log-entry .meta { opacity: 0.5; font-size: 0.75rem; margin-bottom: 4px; }
+
+        /* --- NOTIFICATIONS --- */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: black;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+    <div class="desk-panel">
+        <div class="desk-header">
+            <h1>Writer Tycoon <span style="font-size:0.5em; opacity:0.5;">v0.1</span></h1>
+            <div id="multiplier-badge" style="font-size: 0.8rem; opacity: 0.7;">Rate: $0.10/word</div>
+        </div>
+        
+        <textarea id="editor" placeholder="Start writing your masterpiece here... (Minimum 20 words to publish)"></textarea>
+        
+        <div class="desk-controls">
+            <div class="word-count">Words: <span id="word-count">0</span></div>
+            <button id="btn-publish" class="btn-publish" disabled>Publish Draft</button>
+        </div>
+    </div>
+
+    <div class="tycoon-panel">
+        
+        <div class="stats-bar">
+            <div class="stat-group">
+                <div class="stat-label">Bank Balance</div>
+                <div class="stat-value">$<span id="bank-balance">0.00</span></div>
+            </div>
+            <div class="stat-group">
+                <div class="stat-label">Career Stats</div>
+                <div class="stat-sub">Published: <span id="total-published">0</span> | Words: <span id="total-words">0</span></div>
+            </div>
+        </div>
+
+        <div class="shop-section">
+            <div class="section-title">Office Upgrades</div>
+            <div id="shop-container">
+                </div>
+        </div>
+
+        <div class="log-section" id="game-log">
+            <div class="log-entry"><span class="meta">SYSTEM</span><br>Welcome to your new career. Start writing to earn money.</div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Published!</div>
+
+<script>
+    // --- GAME STATE ---
+    const GAME = {
+        cash: 0,
+        totalWords: 0,
+        publishedCount: 0,
+        baseRate: 0.10, // Cents per word
+        multiplier: 1.0,
+        upgrades: {
+            keyboard: 0,
+            coffee: 0,
+            chair: 0
+        }
+    };
+
+    // --- CONFIGURATION ---
+    const MIN_WORDS_TO_PUBLISH = 20;
+
+    const UPGRADES = [
+        {
+            id: 'keyboard',
+            name: 'Mechanical Keyboard',
+            desc: 'Increases earning multiplier by +0.2x',
+            baseCost: 50,
+            costMult: 1.8,
+            effect: () => { GAME.multiplier += 0.2; }
+        },
+        {
+            id: 'coffee',
+            name: 'Espresso Machine',
+            desc: 'Boosts base rate by +$0.05',
+            baseCost: 150,
+            costMult: 2.0,
+            effect: () => { GAME.baseRate += 0.05; }
+        },
+        {
+            id: 'chair',
+            name: 'Ergonomic Chair',
+            desc: 'Work comfort. +0.5x Multiplier',
+            baseCost: 500,
+            costMult: 2.5,
+            effect: () => { GAME.multiplier += 0.5; }
+        }
+    ];
+
+    // --- DOM ELEMENTS ---
+    const editor = document.getElementById('editor');
+    const wordCountDisplay = document.getElementById('word-count');
+    const btnPublish = document.getElementById('btn-publish');
+    const bankDisplay = document.getElementById('bank-balance');
+    const publishedDisplay = document.getElementById('total-published');
+    const totalWordsDisplay = document.getElementById('total-words');
+    const shopContainer = document.getElementById('shop-container');
+    const logContainer = document.getElementById('game-log');
+    const multiplierBadge = document.getElementById('multiplier-badge');
+
+    // --- INITIALIZATION ---
+    function init() {
+        loadGame();
+        renderStats();
+        renderShop();
+        
+        editor.addEventListener('input', handleInput);
+        btnPublish.addEventListener('click', publishWork);
+        
+        // Auto-save every 10 seconds
+        setInterval(saveGame, 10000);
+    }
+
+    // --- CORE LOGIC ---
+    function handleInput() {
+        const text = editor.value.trim();
+        const words = text ? text.split(/\s+/).length : 0;
+        
+        wordCountDisplay.innerText = words;
+        
+        if (words >= MIN_WORDS_TO_PUBLISH) {
+            btnPublish.disabled = false;
+            btnPublish.innerText = `Publish (${words} words)`;
+        } else {
+            btnPublish.disabled = true;
+            btnPublish.innerText = `Need ${MIN_WORDS_TO_PUBLISH - words} more words`;
+        }
+    }
+
+    function publishWork() {
+        const text = editor.value.trim();
+        const words = text.split(/\s+/).length;
+
+        // MOCK AI EVALUATION
+        // In Phase 2, this will be an API call
+        const qualityScore = (Math.floor(Math.random() * 5) + 6) / 10; // Random 0.6 to 1.0
+        const earnings = (words * GAME.baseRate * GAME.multiplier * qualityScore);
+
+        // Update State
+        GAME.cash += earnings;
+        GAME.totalWords += words;
+        GAME.publishedCount++;
+
+        // Feedback
+        log(`Published "${text.substring(0, 20)}..."`, 
+            `Score: ${(qualityScore*10).toFixed(1)}/10 | Earned: $${earnings.toFixed(2)}`, 
+            true);
+        
+        showToast(`Earned $${earnings.toFixed(2)}`);
+
+        // Reset
+        editor.value = '';
+        handleInput();
+        saveGame();
+        renderStats();
+        renderShop(); // Update button states
+    }
+
+    function buyUpgrade(upgradeIndex) {
+        const item = UPGRADES[upgradeIndex];
+        const currentLevel = GAME.upgrades[item.id];
+        const cost = Math.floor(item.baseCost * Math.pow(item.costMult, currentLevel));
+
+        if (GAME.cash >= cost) {
+            GAME.cash -= cost;
+            GAME.upgrades[item.id]++;
+            item.effect(); // Apply boost
+            
+            log(`Purchased ${item.name}`, `Wallet -${cost}`, true);
+            saveGame();
+            renderStats();
+            renderShop();
+        } else {
+            log(`Cannot afford ${item.name}`, `Need $${cost.toFixed(2)}`, false);
+        }
+    }
+
+    // --- RENDERING ---
+    function renderStats() {
+        bankDisplay.innerText = GAME.cash.toFixed(2);
+        publishedDisplay.innerText = GAME.publishedCount;
+        totalWordsDisplay.innerText = GAME.totalWords;
+        multiplierBadge.innerText = `Rate: $${GAME.baseRate.toFixed(2)}/word x ${GAME.multiplier.toFixed(1)}`;
+    }
+
+    function renderShop() {
+        shopContainer.innerHTML = '';
+        
+        UPGRADES.forEach((item, index) => {
+            const currentLevel = GAME.upgrades[item.id];
+            const cost = Math.floor(item.baseCost * Math.pow(item.costMult, currentLevel));
+            const canAfford = GAME.cash >= cost;
+
+            const div = document.createElement('div');
+            div.className = `upgrade-card ${canAfford ? '' : 'disabled'}`;
+            div.onclick = () => { if(canAfford) buyUpgrade(index); };
+            
+            div.innerHTML = `
+                <div class="upgrade-info">
+                    <h4>${item.name} <span style="font-size:0.7em; opacity:0.5">Lvl ${currentLevel}</span></h4>
+                    <p>${item.desc}</p>
+                </div>
+                <div class="upgrade-cost">$${cost.toLocaleString()}</div>
+            `;
+            shopContainer.appendChild(div);
+        });
+    }
+
+    function log(title, detail, success) {
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${success ? 'success' : 'fail'}`;
+        entry.innerHTML = `<div class="meta">${new Date().toLocaleTimeString()}</div><strong>${title}</strong><br>${detail}`;
+        logContainer.prepend(entry);
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // --- SAVE SYSTEM ---
+    function saveGame() {
+        localStorage.setItem('WriterTycoon_v1', JSON.stringify(GAME));
+    }
+
+    function loadGame() {
+        const saved = localStorage.getItem('WriterTycoon_v1');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            Object.assign(GAME, parsed); // Merge save into GAME object
+        }
+    }
+
+    // Start
+    init();
+
+</script>
+</body>
+</html>
