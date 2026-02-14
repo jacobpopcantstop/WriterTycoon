@@ -81,6 +81,37 @@
             background: #111; border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
 
+        .momentum-wrap {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            background: #101010;
+            margin-bottom: 15px;
+        }
+        .momentum-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+        .momentum-track {
+            height: 7px;
+            border-radius: 99px;
+            background: #1a1a1a;
+            overflow: hidden;
+        }
+        .momentum-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #22c55e, var(--gold));
+            transition: width 0.2s linear;
+        }
+
         .editor-wrapper {
             flex: 1;
             position: relative;
@@ -284,6 +315,16 @@
             </div>
             <button onclick="cancelJob()" style="background:none; border:none; color:#555; cursor:pointer; font-size:0.75rem; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">✕ Cancel</button>
         </div>
+
+        <div class="momentum-wrap">
+            <div class="momentum-head">
+                <span>Flow State</span>
+                <span id="momentum-label">0% bonus</span>
+            </div>
+            <div class="momentum-track">
+                <div id="momentum-fill" class="momentum-fill"></div>
+            </div>
+        </div>
         
         <div class="editor-wrapper">
             <textarea id="editor" placeholder="Consult the Job Board to begin writing..."></textarea>
@@ -385,6 +426,7 @@
         cash: 0, totalWords: 0, publishedCount: 0, multiplier: 1.0,
         specialty: null, projectName: "", manuscript: [], 
         reputation: 0, royaltiesPerTick: 0,
+        momentum: 0,
         ui: { sidebarCollapsed: false, dashboardCollapsed: false },
         cooldowns: {}, upgrades: { pen: 0, notebook: 0, lamp: 0, keyboard: 0, coffee: 0, chair: 0, marketing: 0 }
     };
@@ -433,9 +475,14 @@
         }
 
         editor.addEventListener('input', handleInput);
+        editor.addEventListener('input', () => adjustMomentum(1.5));
         setInterval(() => { 
             saveGame(); 
             if (document.getElementById('job-modal').classList.contains('open')) renderJobBoard(); 
+        }, 1000);
+
+        setInterval(() => {
+            adjustMomentum(-0.8);
         }, 1000);
 
         setInterval(() => {
@@ -499,7 +546,27 @@
         renderManuscript();
         renderStats();
         renderShop();
+        renderMomentum();
         handleInput();
+    }
+
+    function adjustMomentum(delta) {
+        const next = Math.max(0, Math.min(100, GAME.momentum + delta));
+        if (next === GAME.momentum) return;
+        GAME.momentum = next;
+        renderMomentum();
+        renderStats();
+    }
+
+    function getMomentumBonus() {
+        return GAME.momentum * 0.0025;
+    }
+
+    function renderMomentum() {
+        const pct = Math.round(GAME.momentum);
+        const bonusPct = (getMomentumBonus() * 100).toFixed(1);
+        document.getElementById('momentum-fill').style.width = `${pct}%`;
+        document.getElementById('momentum-label').innerText = `${bonusPct}% bonus`;
     }
 
     function handleInput() {
@@ -569,8 +636,9 @@
         document.getElementById('review-overlay').style.display = 'none';
         const score = parseFloat(aiResult.score);
         const quality = score / 10;
-        let earnings = (score <= 1.0) ? -(job.payout * 0.2) : (score < 4.0 ? 0 : (job.payout * GAME.multiplier * quality));
+        let earnings = (score <= 1.0) ? -(job.payout * 0.2) : (score < 4.0 ? 0 : (job.payout * GAME.multiplier * quality * (1 + getMomentumBonus())));
         GAME.cash += earnings; GAME.totalWords += words; GAME.publishedCount++;
+        adjustMomentum(job.isMilestone ? 18 : 10);
         if (job.isMilestone) { GAME.manuscript.push({ title: job.title, text: text, score: aiResult.score, date: new Date().toLocaleDateString() }); updateRoyalties(); }
         if (job.cooldown) GAME.cooldowns[job.id] = Date.now() + job.cooldown;
         showCritiqueModal(aiResult.score, aiResult.critique, earnings);
@@ -635,7 +703,7 @@
     function exportManuscript() { if (GAME.manuscript.length === 0) return; let output = `# ${GAME.projectName}\n\n`; GAME.manuscript.forEach(m => { output += `## ${m.title}\n\n${m.text}\n\n`; }); const blob = new Blob([output], { type: 'text/markdown' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${GAME.projectName}.md`; a.click(); }
     function buyUpgrade(idx) { const item = UPGRADES[idx]; const lvl = GAME.upgrades[item.id] || 0; const cost = Math.floor(item.baseCost * Math.pow(item.costMult, lvl)); if (GAME.cash >= cost) { GAME.cash -= cost; GAME.upgrades[item.id]++; recalculateMultiplier(); saveGame(); refreshUI(); log('UPGRADE PURCHASED', `${item.name} acquired.`, 'success'); } }
     function recalculateMultiplier() { let m = 1.0; UPGRADES.forEach(u => { m += (GAME.upgrades[u.id] || 0) * u.boost; }); m += (GAME.reputation || 0) * 0.05; GAME.multiplier = m; }
-    function renderStats() { document.getElementById('bank-balance').innerText = `$${GAME.cash.toLocaleString(undefined, {minimumFractionDigits: 2})}`; document.getElementById('total-published').innerText = `${GAME.manuscript.length} Parts`; document.getElementById('total-words').innerText = GAME.totalWords.toLocaleString(); document.getElementById('multiplier-badge').innerText = `${GAME.multiplier.toFixed(2)}x`; if (GAME.reputation > 0) { const r = document.getElementById('rep-badge'); r.style.display = 'block'; r.innerText = `Rep: ${GAME.reputation}`; } if (GAME.royaltiesPerTick > 0) { const r = document.getElementById('royalty-display'); r.style.opacity = 1; r.innerText = `+ $${GAME.royaltiesPerTick.toFixed(2)} / 5s`; } }
+    function renderStats() { document.getElementById('bank-balance').innerText = `$${GAME.cash.toLocaleString(undefined, {minimumFractionDigits: 2})}`; document.getElementById('total-published').innerText = `${GAME.manuscript.length} Parts`; document.getElementById('total-words').innerText = GAME.totalWords.toLocaleString(); document.getElementById('multiplier-badge').innerText = `${GAME.multiplier.toFixed(2)}x / +${(getMomentumBonus() * 100).toFixed(1)}% flow`; if (GAME.reputation > 0) { const r = document.getElementById('rep-badge'); r.style.display = 'block'; r.innerText = `Rep: ${GAME.reputation}`; } if (GAME.royaltiesPerTick > 0) { const r = document.getElementById('royalty-display'); r.style.opacity = 1; r.innerText = `+ $${GAME.royaltiesPerTick.toFixed(2)} / 5s`; } }
     function renderShop() { const cont = document.getElementById('shop-container'); cont.innerHTML = ''; UPGRADES.forEach((u, i) => { const lvl = GAME.upgrades[u.id] || 0; const cost = Math.floor(u.baseCost * Math.pow(u.costMult, lvl)); const card = document.createElement('div'); card.className = `upgrade-card ${GAME.cash < cost ? 'disabled' : ''}`; card.onclick = () => buyUpgrade(i); card.innerHTML = `<div class="upgrade-info"><h4>${u.name} (Lvl ${lvl})</h4><p>${u.desc}</p></div><div style="font-weight:bold; color:var(--accent)">$${cost}</div>`; cont.appendChild(card); }); }
     function log(t, d, type) { const entry = document.createElement('div'); entry.className = `log-entry ${type}`; entry.innerHTML = `<div class="log-meta">${new Date().toLocaleTimeString()}</div><strong>${t}</strong><br>${d}`; const logBox = document.getElementById('game-log'); logBox.prepend(entry); logBox.scrollTop = 0; }
     function saveGame() { localStorage.setItem('WriterTycoon_v20', JSON.stringify(GAME)); }
