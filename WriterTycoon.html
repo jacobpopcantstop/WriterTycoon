@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Writer Tycoon</title>
+    <title>Indie Studio Tycoon</title>
     <style>
         :root {
             --bg: #0a0a0a;
@@ -308,11 +308,11 @@
     <!-- SIDEBAR -->
     <div id="sidebar" class="sidebar">
         <div class="sidebar-header">
-            <div style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 3px; opacity: 0.4; margin-bottom: 8px;">Manuscript</div>
+            <div style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 3px; opacity: 0.4; margin-bottom: 8px;">Project Pipeline</div>
             <div id="project-display-name" style="font-weight: 900; font-family: var(--font-mono); color: var(--accent); font-size: 1.1rem;">-</div>
             <div id="project-type-tag" style="font-size: 0.65rem; opacity: 0.3; margin-top: 5px;">-</div>
             <div id="project-actions" style="margin-top: 20px;">
-                <button onclick="exportManuscript()" style="width:100%; font-size:0.7rem; padding:10px; background:#111; border:1px solid #222; color:#888; cursor:pointer; border-radius:6px; font-weight: bold; text-transform: uppercase;">Export .MD</button>
+                <button onclick="exportManuscript()" style="width:100%; font-size:0.7rem; padding:10px; background:#111; border:1px solid #222; color:#888; cursor:pointer; border-radius:6px; font-weight: bold; text-transform: uppercase;">Export Design Doc</button>
             </div>
         </div>
         <div id="manuscript-list" class="manuscript-list"></div>
@@ -327,7 +327,7 @@
 
         <div class="desk-header">
             <div style="display:flex; align-items:center;">
-                <h1>Writer Tycoon</h1>
+                <h1>Indie Studio Tycoon</h1>
                 <span id="project-label" class="project-label">SELECT PROJECT</span>
             </div>
             <div style="display:flex; gap:10px; align-items:center;">
@@ -356,7 +356,7 @@
         </div>
         
         <div class="editor-wrapper">
-            <textarea id="editor" placeholder="Consult the Job Board to begin writing..."></textarea>
+            <textarea id="editor" placeholder="Open the Contract Board to begin production..."></textarea>
             <div class="progress-container">
                 <div id="progress-bar" class="progress-fill"></div>
             </div>
@@ -364,7 +364,7 @@
         
         <div class="desk-controls">
             <div style="font-family: var(--font-mono); opacity: 0.4; font-size: 0.85rem;">Word Count: <span id="word-count" style="color:#fff; font-weight:bold;">0</span></div>
-            <button id="btn-publish" class="btn-primary" disabled onclick="handlePublishClick()">Consult Job Board</button>
+            <button id="btn-publish" class="btn-primary" disabled onclick="handlePublishClick()">Open Contract Board</button>
         </div>
     </div>
 
@@ -377,7 +377,7 @@
                 <div id="royalty-display" class="royalty-ticker" style="margin-top:5px; opacity:0;">+ $0.00 / 5s</div>
             </div>
             <div style="display:flex; justify-content:space-between; margin-top:20px;">
-                <div><div class="stat-label">Project Status</div><div id="total-published" style="font-weight:bold; font-family:var(--font-mono);">0 Parts</div></div>
+                <div><div class="stat-label">Project Status</div><div id="total-published" style="font-weight:bold; font-family:var(--font-mono);">0 Milestones</div></div>
                 <div><div class="stat-label">Lifetime Words</div><div id="total-words" style="font-weight:bold; font-family:var(--font-mono);">0</div></div>
             </div>
             <div id="progress-intel" class="progress-intel">
@@ -402,7 +402,7 @@
     <!-- MODALS -->
     <div id="setup-modal" class="modal-overlay">
         <div class="card-panel" style="width:600px;">
-            <h2 style="letter-spacing:8px; border-bottom:1px solid #1a1a1a; padding-bottom:20px; margin:0 0 30px 0; text-align: center; font-weight: 900;">MANIFESTO</h2>
+            <h2 style="letter-spacing:8px; border-bottom:1px solid #1a1a1a; padding-bottom:20px; margin:0 0 30px 0; text-align: center; font-weight: 900;">STUDIO BRIEF</h2>
             <div class="modal-scroll-area">
                 <div style="margin-bottom:40px;">
                     <label style="font-size:0.65rem; text-transform:uppercase; color:#444; display:block; margin-bottom:12px; letter-spacing: 2px; font-weight: bold;">0.1 / Working Title</label>
@@ -419,7 +419,7 @@
                 </div>
             </div>
             <div style="margin-top:20px; border-top:1px solid #111; padding-top:20px; text-align: right; opacity: 0.2; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 2px;">
-                SYSTEMS ONLINE / PROJECT INITIATION v2.0
+                SYSTEMS ONLINE / STUDIO BOOTSTRAP v2.1
             </div>
         </div>
     </div>
@@ -427,7 +427,7 @@
     <div id="job-modal" class="modal-overlay">
         <div class="card-panel">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-                <h2 style="margin:0; font-size:1.4rem; letter-spacing:4px; font-weight: 900;">JOB BOARD</h2>
+                <h2 style="margin:0; font-size:1.4rem; letter-spacing:4px; font-weight: 900;">CONTRACT BOARD</h2>
                 <button onclick="toggleJobBoard()" style="background:none; border:none; color:#444; font-size:2rem; cursor:pointer;">×</button>
             </div>
             <div id="job-list" style="overflow-y:auto; flex:1; padding-right:10px;"></div>
@@ -436,18 +436,18 @@
 
     <div id="critique-modal" class="modal-overlay" onclick="closeCritique()">
         <div class="critique-card" onclick="event.stopPropagation()">
-            <div style="font-size:0.65rem; letter-spacing:3px; color:#555; text-transform:uppercase; font-weight: bold; margin-bottom: 10px;">Evaluation Report</div>
+            <div style="font-size:0.65rem; letter-spacing:3px; color:#555; text-transform:uppercase; font-weight: bold; margin-bottom: 10px;">Release Debrief</div>
             <div id="critique-score" style="font-size:5rem; font-weight:900; font-family:var(--font-mono); margin:10px 0;">0.0</div>
             <div id="critique-text" style="font-size:1.1rem; margin:25px 0; color:#aaa; line-height:1.7; font-style:italic;"></div>
             <div id="critique-earnings" style="font-family:var(--font-mono); font-size:1.8rem; background:#000; padding:20px; border-radius:10px; margin-bottom:30px; border:1px solid #111;"></div>
-            <button class="btn-primary" style="width:100%" onclick="closeCritique()">Keep Writing</button>
+            <button class="btn-primary" style="width:100%" onclick="closeCritique()">Continue Development</button>
         </div>
     </div>
 
     <div id="archive-modal" class="modal-overlay" onclick="closeArchive()">
         <div class="card-panel" onclick="event.stopPropagation()">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 id="archive-title" style="margin:0; font-size:1rem; color:var(--accent); font-family:var(--font-mono);">Archived Part</h2>
+                <h2 id="archive-title" style="margin:0; font-size:1rem; color:var(--accent); font-family:var(--font-mono);">Archived Milestone</h2>
                 <button onclick="closeArchive()" style="background:none; border:none; color:#444; font-size:2rem; cursor:pointer;">×</button>
             </div>
             <div id="archive-content" class="archive-card"></div>
@@ -510,7 +510,7 @@
         applyUIState();
 
         if (document.getElementById('game-log').children.length === 0) {
-            log('SYSTEM INITIALIZED', 'Literary engine online. Waiting for draft...', false);
+            log('SYSTEM INITIALIZED', 'Studio systems online. Awaiting first contract...', false);
         }
 
         editor.addEventListener('input', handleInput);
@@ -562,7 +562,7 @@
         GAME.manuscript = [];
         document.getElementById('setup-modal').classList.remove('open');
         refreshUI();
-        log('MANIFESTO BEGUN', `${title} (${spec}) project initiated.`, 'milestone');
+        log('STUDIO BRIEF LOCKED', `${title} (${spec}) production slate initiated.`, 'milestone');
         saveGame();
     }
 
@@ -575,14 +575,14 @@
 
         const actionsDiv = document.getElementById('project-actions');
         if (!hasActiveProject) {
-            actionsDiv.innerHTML = `<button disabled style="width:100%; font-size:0.7rem; padding:10px; background:#0b0b0b; border:1px solid #181818; color:#444; border-radius:6px; font-weight: bold; text-transform: uppercase;">Start a project to export</button>`;
+            actionsDiv.innerHTML = `<button disabled style="width:100%; font-size:0.7rem; padding:10px; background:#0b0b0b; border:1px solid #181818; color:#444; border-radius:6px; font-weight: bold; text-transform: uppercase;">Start a studio brief to export</button>`;
         } else if (GAME.manuscript.length >= 3) {
             actionsDiv.innerHTML = `
-                <button onclick="completeProject()" class="btn-gold">PUBLISH BOOK</button>
-                <button onclick="exportManuscript()" style="width:100%; font-size:0.6rem; padding:8px; background:none; border:none; color:#666; cursor:pointer; margin-top:5px;">EXPORT .MD</button>
+                <button onclick="completeProject()" class="btn-gold">SHIP PROJECT</button>
+                <button onclick="exportManuscript()" style="width:100%; font-size:0.6rem; padding:8px; background:none; border:none; color:#666; cursor:pointer; margin-top:5px;">EXPORT DESIGN DOC</button>
             `;
         } else {
-            actionsDiv.innerHTML = `<button onclick="exportManuscript()" style="width:100%; font-size:0.7rem; padding:10px; background:#111; border:1px solid #222; color:#888; cursor:pointer; border-radius:6px; font-weight: bold; text-transform: uppercase;">Export .MD</button>`;
+            actionsDiv.innerHTML = `<button onclick="exportManuscript()" style="width:100%; font-size:0.7rem; padding:10px; background:#111; border:1px solid #222; color:#888; cursor:pointer; border-radius:6px; font-weight: bold; text-transform: uppercase;">Export Design Doc</button>`;
         }
 
         renderManuscript();
@@ -647,7 +647,7 @@
             progressBar.style.width = `${percent}%`;
             
             if (remaining === 0) { 
-                btnPublish.innerText = "Submit Part"; 
+                btnPublish.innerText = "Ship Milestone"; 
                 btnPublish.disabled = false; 
                 btnPublish.style.background = "var(--accent)"; 
                 btnPublish.style.color = "#000";
@@ -662,7 +662,7 @@
                 progressBar.classList.remove('complete');
             }
         } else { 
-            btnPublish.innerText = "Consult Job Board"; 
+            btnPublish.innerText = "Open Contract Board"; 
             btnPublish.disabled = false; 
             btnPublish.style.background = "transparent"; 
             btnPublish.style.color = "var(--accent)";
@@ -683,7 +683,7 @@
     async function callGeminiEvaluation(text, job) {
         const context = GAME.manuscript.length > 0 ? `The previous parts were: ${GAME.manuscript.map(m => m.title).join(', ')}.` : "This is the start.";
         const careerPhase = GAME.manuscript.length < 4 ? "early discovery stage" : "professional development stage";
-        const systemPrompt = `You are a professional editor evaluating a ${GAME.specialty} submission for "${GAME.projectName}". Phase: ${careerPhase}. Goal: ${job.title} - ${job.brief}. Context: ${context}. Score quality 1.0 to 10.0. Return ONLY JSON: { "score": number, "critique": "one sentence feedback" }`;
+        const systemPrompt = `You are a veteran creative director evaluating a ${GAME.specialty} production milestone for "${GAME.projectName}". Phase: ${careerPhase}. Contract Goal: ${job.title} - ${job.brief}. Context: ${context}. Score quality 1.0 to 10.0. Return ONLY JSON: { "score": number, "critique": "one sentence feedback" }`;
 
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
@@ -761,8 +761,8 @@
     function renderJobBoard() {
         const list = document.getElementById('job-list'); list.innerHTML = '';
         const milestoneNum = GAME.manuscript.length + 1;
-        const milestoneNames = { 'Novel': 'Chapter', 'Screenplay': 'Scene', 'Play': 'Act', 'Poetry': 'Verse', 'Essay': 'Segment', 'Sketch Comedy': 'Sketch' };
-        const mName = milestoneNames[GAME.specialty] || "Part";
+        const milestoneNames = { 'Novel': 'Sprint', 'Screenplay': 'Vertical Slice', 'Play': 'Milestone', 'Poetry': 'Prototype', 'Essay': 'Design Pass', 'Sketch Comedy': 'Feature Beat' };
+        const mName = milestoneNames[GAME.specialty] || "Milestone";
         const milestoneJob = { id: 'm_current', isMilestone: true, title: `${mName} ${milestoneNum}`, brief: `Next milestone.`, payout: 100 + (milestoneNum * 20), minWords: 150 + (milestoneNum * 50) };
         const filteredSideJobs = JOBS.filter(j => j.type === 'Any' || j.type === GAME.specialty);
         [milestoneJob, ...filteredSideJobs].forEach(job => {
@@ -776,7 +776,7 @@
         });
     }
 
-    function acceptJob(job) { GAME.currentJob = job; document.getElementById('job-modal').classList.remove('open'); document.getElementById('active-job-bar').style.display = 'flex'; document.getElementById('current-job-target').innerText = job.title; editor.placeholder = `Goal: ${job.brief}`; handleInput(); }
+    function acceptJob(job) { GAME.currentJob = job; document.getElementById('job-modal').classList.remove('open'); document.getElementById('active-job-bar').style.display = 'flex'; document.getElementById('current-job-target').innerText = job.title; editor.placeholder = `Deliverable: ${job.brief}`; handleInput(); }
     function toggleJobBoard() { document.getElementById('job-modal').classList.toggle('open'); if(document.getElementById('job-modal').classList.contains('open')) renderJobBoard(); }
     function closeCritique() { document.getElementById('critique-modal').classList.remove('open'); }
     function closeArchive() { document.getElementById('archive-modal').classList.remove('open'); }
@@ -786,7 +786,7 @@
     function exportManuscript() { if (GAME.manuscript.length === 0) return; let output = `# ${GAME.projectName}\n\n`; GAME.manuscript.forEach(m => { output += `## ${m.title}\n\n${m.text}\n\n`; }); const blob = new Blob([output], { type: 'text/markdown' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${GAME.projectName}.md`; a.click(); }
     function buyUpgrade(idx) { const item = UPGRADES[idx]; const lvl = GAME.upgrades[item.id] || 0; const cost = Math.floor(item.baseCost * Math.pow(item.costMult, lvl)); if (GAME.cash >= cost) { GAME.cash -= cost; GAME.upgrades[item.id]++; recalculateMultiplier(); saveGame(); refreshUI(); log('UPGRADE PURCHASED', `${item.name} acquired.`, 'success'); } }
     function recalculateMultiplier() { let m = 1.0; UPGRADES.forEach(u => { m += (GAME.upgrades[u.id] || 0) * u.boost; }); m += (GAME.reputation || 0) * 0.05; GAME.multiplier = m; }
-    function renderStats() { document.getElementById('bank-balance').innerText = `$${GAME.cash.toLocaleString(undefined, {minimumFractionDigits: 2})}`; document.getElementById('total-published').innerText = `${GAME.manuscript.length} Parts`; document.getElementById('total-words').innerText = GAME.totalWords.toLocaleString(); document.getElementById('multiplier-badge').innerText = `${GAME.multiplier.toFixed(2)}x / +${(getMomentumBonus() * 100).toFixed(1)}% flow / +${(getStreakBonus() * 100).toFixed(0)}% streak`; if (GAME.reputation > 0) { const r = document.getElementById('rep-badge'); r.style.display = 'block'; r.innerText = `Rep: ${GAME.reputation}`; } else { document.getElementById('rep-badge').style.display = 'none'; } if (GAME.streak > 0) { const s = document.getElementById('streak-badge'); s.style.display = 'block'; s.innerText = `Streak: x${GAME.streak}`; } else { document.getElementById('streak-badge').style.display = 'none'; } if (GAME.royaltiesPerTick > 0) { const r = document.getElementById('royalty-display'); r.style.opacity = 1; r.innerText = `+ $${GAME.royaltiesPerTick.toFixed(2)} / 5s`; } else { document.getElementById('royalty-display').style.opacity = 0; } }
+    function renderStats() { document.getElementById('bank-balance').innerText = `$${GAME.cash.toLocaleString(undefined, {minimumFractionDigits: 2})}`; document.getElementById('total-published').innerText = `${GAME.manuscript.length} Milestones`; document.getElementById('total-words').innerText = GAME.totalWords.toLocaleString(); document.getElementById('multiplier-badge').innerText = `${GAME.multiplier.toFixed(2)}x / +${(getMomentumBonus() * 100).toFixed(1)}% flow / +${(getStreakBonus() * 100).toFixed(0)}% streak`; if (GAME.reputation > 0) { const r = document.getElementById('rep-badge'); r.style.display = 'block'; r.innerText = `Rep: ${GAME.reputation}`; } else { document.getElementById('rep-badge').style.display = 'none'; } if (GAME.streak > 0) { const s = document.getElementById('streak-badge'); s.style.display = 'block'; s.innerText = `Streak: x${GAME.streak}`; } else { document.getElementById('streak-badge').style.display = 'none'; } if (GAME.royaltiesPerTick > 0) { const r = document.getElementById('royalty-display'); r.style.opacity = 1; r.innerText = `+ $${GAME.royaltiesPerTick.toFixed(2)} / 5s`; } else { document.getElementById('royalty-display').style.opacity = 0; } }
     function renderShop() { const cont = document.getElementById('shop-container'); cont.innerHTML = ''; UPGRADES.forEach((u, i) => { const lvl = GAME.upgrades[u.id] || 0; const cost = Math.floor(u.baseCost * Math.pow(u.costMult, lvl)); const card = document.createElement('div'); card.className = `upgrade-card ${GAME.cash < cost ? 'disabled' : ''}`; card.onclick = () => buyUpgrade(i); card.innerHTML = `<div class="upgrade-info"><h4>${u.name} (Lvl ${lvl})</h4><p>${u.desc}</p></div><div style="font-weight:bold; color:var(--accent)">$${cost}</div>`; cont.appendChild(card); }); }
     function log(t, d, type) { const entry = document.createElement('div'); entry.className = `log-entry ${type}`; entry.innerHTML = `<div class="log-meta">${new Date().toLocaleTimeString()}</div><strong>${t}</strong><br>${d}`; const logBox = document.getElementById('game-log'); logBox.prepend(entry); logBox.scrollTop = 0; }
 
