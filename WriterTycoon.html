@@ -354,6 +354,15 @@
                 <div id="momentum-fill" class="momentum-fill"></div>
             </div>
         </div>
+
+        <div class="momentum-wrap" style="padding:12px 14px;">
+            <div class="momentum-head" style="margin-bottom:10px;"><span>Production Mode</span><span id="mode-note" style="opacity:0.6;">Balanced output</span></div>
+            <select id="production-mode" style="width:100%; background:#0b0b0b; color:var(--text); border:1px solid #222; border-radius:6px; padding:10px; font-family:var(--font-mono);">
+                <option value="balanced">Balanced</option>
+                <option value="crunch">Crunch</option>
+                <option value="polish">Polish</option>
+            </select>
+        </div>
         
         <div class="editor-wrapper">
             <textarea id="editor" placeholder="Open the Contract Board to begin production..."></textarea>
@@ -513,6 +522,11 @@
             burnPerUpgradeLevel: 0.4,
             burnPerReputation: 0.25,
             debtInterestRatePerTick: 0.01
+        },
+        productionModes: {
+            balanced: { label: 'Balanced output', scoreDelta: 0, earningsMult: 1.0, burnMult: 1.0, streakDifficulty: 0 },
+            crunch: { label: 'Faster ship cadence', scoreDelta: -0.4, earningsMult: 1.12, burnMult: 1.35, streakDifficulty: 0.5 },
+            polish: { label: 'Higher quality focus', scoreDelta: 0.5, earningsMult: 0.96, burnMult: 0.9, streakDifficulty: -0.4 }
         }
     };
 
@@ -524,6 +538,7 @@
         streak: 0, bestStreak: 0,
         market: { trend: 'Any', expiresAt: 0 },
         financials: { totalExpenses: 0 },
+        productionMode: 'balanced',
         ui: { sidebarCollapsed: false, dashboardCollapsed: false },
         cooldowns: {}, upgrades: { pen: 0, notebook: 0, lamp: 0, keyboard: 0, coffee: 0, chair: 0, marketing: 0 }
     };
@@ -559,6 +574,7 @@
     const btnPublish = document.getElementById('btn-publish');
     const bankDisplay = document.getElementById('bank-balance');
     const progressBar = document.getElementById('progress-bar');
+    const productionModeSelect = document.getElementById('production-mode');
 
     function init() {
         loadGame();
@@ -577,6 +593,13 @@
 
         editor.addEventListener('input', handleInput);
         editor.addEventListener('input', () => adjustMomentum(BALANCE.momentum.gainPerInput));
+        productionModeSelect.addEventListener('change', (e) => {
+            GAME.productionMode = e.target.value;
+            renderProductionMode();
+            renderStats();
+            renderProgressIntel();
+            saveGame();
+        });
         setInterval(() => { 
             if (Date.now() >= (GAME.market.expiresAt || 0)) {
                 rollMarketTrend();
@@ -655,11 +678,24 @@
         renderManuscript();
         renderStats();
         renderShop();
+        renderProductionMode();
         renderProgressIntel();
         renderMomentum();
         handleInput();
     }
 
+
+    function getProductionModeConfig() {
+        return BALANCE.productionModes[GAME.productionMode] || BALANCE.productionModes.balanced;
+    }
+
+    function renderProductionMode() {
+        const modeCfg = getProductionModeConfig();
+        if (productionModeSelect.value !== GAME.productionMode) {
+            productionModeSelect.value = GAME.productionMode;
+        }
+        document.getElementById('mode-note').innerText = modeCfg.label;
+    }
 
     function getActiveTrend() {
         const trend = GAME.market?.trend || 'Any';
@@ -704,7 +740,8 @@
         const base = BALANCE.economy.opsBaseBurnPerTick;
         const upgradeCost = getUpgradeLevelTotal() * BALANCE.economy.burnPerUpgradeLevel;
         const repCost = (GAME.reputation || 0) * BALANCE.economy.burnPerReputation;
-        return Math.max(0, base + upgradeCost + repCost);
+        const modeMult = getProductionModeConfig().burnMult;
+        return Math.max(0, (base + upgradeCost + repCost) * modeMult);
     }
 
     function applyOperatingCosts() {
@@ -721,7 +758,7 @@
 
     function renderProgressIntel() {
         const arc = !GAME.specialty ? 'Searching for a concept' : (GAME.manuscript.length >= 3 ? 'Launch-ready manuscript' : 'Drafting in progress');
-        document.getElementById('intel-arc').innerText = arc;
+        document.getElementById('intel-arc').innerText = `${arc} / ${getProductionModeConfig().label}`;
 
         const nextWordGoal = Math.ceil((GAME.totalWords + 1) / 1000) * 1000;
         const wordsRemaining = Math.max(0, nextWordGoal - GAME.totalWords);
@@ -842,14 +879,16 @@
         document.getElementById('review-overlay').style.display = 'flex';
         const aiResult = await callGeminiEvaluation(text, job) || { score: (Math.random() * BALANCE.review.fallbackScoreRange + BALANCE.review.fallbackMinScore).toFixed(1), critique: "Editor reviewed this offline." };
         document.getElementById('review-overlay').style.display = 'none';
-        const score = parseFloat(aiResult.score);
-        const quality = score / 10;
+        const modeCfg = getProductionModeConfig();
+        const rawScore = parseFloat(aiResult.score);
+        const adjustedScore = Math.max(1, Math.min(10, rawScore + modeCfg.scoreDelta));
+        const quality = adjustedScore / 10;
         const trendBonus = getTrendBonusForJob(job);
         const bonusMult = 1 + getMomentumBonus() + getStreakBonus() + trendBonus;
-        let earnings = (score <= BALANCE.review.failureThreshold) ? -(job.payout * BALANCE.review.failurePenaltyRate) : (score < BALANCE.review.noPayThreshold ? 0 : (job.payout * GAME.multiplier * quality * bonusMult));
+        let earnings = (adjustedScore <= BALANCE.review.failureThreshold) ? -(job.payout * BALANCE.review.failurePenaltyRate) : (adjustedScore < BALANCE.review.noPayThreshold ? 0 : (job.payout * GAME.multiplier * quality * bonusMult * modeCfg.earningsMult));
         GAME.cash += earnings; GAME.totalWords += words; GAME.publishedCount++;
 
-        if (score >= BALANCE.streak.scoreThreshold && earnings > 0) {
+        if (adjustedScore >= (BALANCE.streak.scoreThreshold + modeCfg.streakDifficulty) && earnings > 0) {
             GAME.streak++;
             GAME.bestStreak = Math.max(GAME.bestStreak || 0, GAME.streak);
             if (GAME.streak % BALANCE.streak.milestoneEvery === 0) {
@@ -864,8 +903,8 @@
         adjustMomentum(job.isMilestone ? BALANCE.momentum.milestoneGain : BALANCE.momentum.sideJobGain);
         if (job.isMilestone) { GAME.manuscript.push({ title: job.title, text: text, score: aiResult.score, date: new Date().toLocaleDateString() }); updateRoyalties(); }
         if (job.cooldown) GAME.cooldowns[job.id] = Date.now() + job.cooldown;
-        showCritiqueModal(aiResult.score, aiResult.critique, earnings);
-        log(`${job.title} SUBMISSION`, `${aiResult.critique} (Score: ${aiResult.score})`, earnings > 0 ? 'success' : 'fail');
+        showCritiqueModal(adjustedScore.toFixed(1), `${aiResult.critique} [${GAME.productionMode}]`, earnings);
+        log(`${job.title} SUBMISSION`, `${aiResult.critique} (Score: ${adjustedScore.toFixed(1)}, mode: ${GAME.productionMode})`, earnings > 0 ? 'success' : 'fail');
         GAME.currentJob = null; document.getElementById('active-job-bar').style.display = 'none'; editor.value = ''; refreshUI();
     }
 
@@ -911,7 +950,7 @@
             const isOnCooldown = Date.now() < readyAt;
             const el = document.createElement('div');
             el.className = `job-card ${job.isMilestone ? 'milestone' : ''} ${isOnCooldown ? 'on-cooldown' : ''}`;
-            const estimated = job.payout * GAME.multiplier * (1 + getMomentumBonus() + getStreakBonus() + getTrendBonusForJob(job));
+            const estimated = job.payout * GAME.multiplier * (1 + getMomentumBonus() + getStreakBonus() + getTrendBonusForJob(job)) * getProductionModeConfig().earningsMult;
             el.innerHTML = `<div><div style="font-weight:bold; color:#fff; display:flex; align-items:center;">${job.isMilestone ? '<span class="tag milestone-tag">PROJECT</span>' : ''}${job.title}</div><div style="font-size:0.75rem; opacity:0.5; margin-top:5px;">${job.brief}</div><div style="font-size:0.65rem; margin-top:10px; opacity:0.3;">Min: ${job.minWords} words</div></div><div style="text-align:right"><div style="font-family:var(--font-mono); font-weight:bold; color:var(--accent); font-size: 1.1rem; margin-bottom:2px;">$${estimated.toFixed(0)}</div><div style="font-size:0.62rem; opacity:0.35; margin-bottom:8px;">est. incl. flow/streak</div><button class="btn-primary" ${isOnCooldown ? 'disabled' : ''} onclick='acceptJob(${JSON.stringify(job).replace(/'/g, "&apos;")})'>${isOnCooldown ? `Wait` : 'Accept'}</button></div>`;
             list.appendChild(el);
         });
@@ -955,6 +994,7 @@
             financials: {
                 totalExpenses: Number.isFinite(safe.financials?.totalExpenses) ? safe.financials.totalExpenses : 0
             },
+            productionMode: BALANCE.productionModes[safe.productionMode] ? safe.productionMode : 'balanced',
             streak: Number.isFinite(safe.streak) ? safe.streak : 0,
             bestStreak: Number.isFinite(safe.bestStreak) ? safe.bestStreak : 0
         };
