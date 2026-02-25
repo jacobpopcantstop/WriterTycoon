@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Writer Tycoon</title>
+    <title>Indie Studio Tycoon</title>
     <style>
         :root {
             --bg: #0a0a0a;
@@ -188,6 +188,34 @@
         .history-wrapper { flex-shrink: 0; background: #080808; border-top: 1px solid var(--border); padding: 0; display: flex; flex-direction: column; max-height: 35%; }
         .log-section { height: 200px; padding: 0 25px 25px 25px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.8rem; }
 
+        .progress-intel {
+            margin-top: 18px;
+            padding: 14px;
+            background: #101010;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .progress-intel .intel-title {
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0.45;
+            margin-bottom: 8px;
+        }
+        .progress-intel .intel-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            padding: 4px 0;
+            font-family: var(--font-mono);
+        }
+        .progress-intel .intel-item span:first-child {
+            opacity: 0.5;
+        }
+        .progress-intel .intel-item strong {
+            color: var(--accent);
+        }
+
         /* --- FLOATING TOGGLES --- */
         /* These are now direct children of BODY, so they won't get clipped */
         .side-toggle {
@@ -280,11 +308,11 @@
     <!-- SIDEBAR -->
     <div id="sidebar" class="sidebar">
         <div class="sidebar-header">
-            <div style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 3px; opacity: 0.4; margin-bottom: 8px;">Manuscript</div>
+            <div style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 3px; opacity: 0.4; margin-bottom: 8px;">Project Pipeline</div>
             <div id="project-display-name" style="font-weight: 900; font-family: var(--font-mono); color: var(--accent); font-size: 1.1rem;">-</div>
             <div id="project-type-tag" style="font-size: 0.65rem; opacity: 0.3; margin-top: 5px;">-</div>
             <div id="project-actions" style="margin-top: 20px;">
-                <button onclick="exportManuscript()" style="width:100%; font-size:0.7rem; padding:10px; background:#111; border:1px solid #222; color:#888; cursor:pointer; border-radius:6px; font-weight: bold; text-transform: uppercase;">Export .MD</button>
+                <button onclick="exportManuscript()" style="width:100%; font-size:0.7rem; padding:10px; background:#111; border:1px solid #222; color:#888; cursor:pointer; border-radius:6px; font-weight: bold; text-transform: uppercase;">Export Design Doc</button>
             </div>
         </div>
         <div id="manuscript-list" class="manuscript-list"></div>
@@ -299,11 +327,12 @@
 
         <div class="desk-header">
             <div style="display:flex; align-items:center;">
-                <h1>Writer Tycoon</h1>
+                <h1>Indie Studio Tycoon</h1>
                 <span id="project-label" class="project-label">SELECT PROJECT</span>
             </div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <div id="rep-badge" style="font-size: 0.8rem; opacity: 0.8; font-family: var(--font-mono); font-weight: bold; color:var(--gold); display:none;">Rep: 0</div>
+                <div id="streak-badge" style="font-size: 0.8rem; opacity: 0.8; font-family: var(--font-mono); font-weight: bold; color:var(--accent); display:none;">Streak: x0</div>
                 <div id="multiplier-badge" style="font-size: 0.8rem; opacity: 0.6; font-family: var(--font-mono); font-weight: bold; background: #111; padding: 5px 12px; border-radius: 20px;">1.00x</div>
             </div>
         </div>
@@ -327,7 +356,7 @@
         </div>
         
         <div class="editor-wrapper">
-            <textarea id="editor" placeholder="Consult the Job Board to begin writing..."></textarea>
+            <textarea id="editor" placeholder="Open the Contract Board to begin production..."></textarea>
             <div class="progress-container">
                 <div id="progress-bar" class="progress-fill"></div>
             </div>
@@ -335,7 +364,7 @@
         
         <div class="desk-controls">
             <div style="font-family: var(--font-mono); opacity: 0.4; font-size: 0.85rem;">Word Count: <span id="word-count" style="color:#fff; font-weight:bold;">0</span></div>
-            <button id="btn-publish" class="btn-primary" disabled onclick="handlePublishClick()">Consult Job Board</button>
+            <button id="btn-publish" class="btn-primary" disabled onclick="handlePublishClick()">Open Contract Board</button>
         </div>
     </div>
 
@@ -348,8 +377,14 @@
                 <div id="royalty-display" class="royalty-ticker" style="margin-top:5px; opacity:0;">+ $0.00 / 5s</div>
             </div>
             <div style="display:flex; justify-content:space-between; margin-top:20px;">
-                <div><div class="stat-label">Project Status</div><div id="total-published" style="font-weight:bold; font-family:var(--font-mono);">0 Parts</div></div>
+                <div><div class="stat-label">Project Status</div><div id="total-published" style="font-weight:bold; font-family:var(--font-mono);">0 Milestones</div></div>
                 <div><div class="stat-label">Lifetime Words</div><div id="total-words" style="font-weight:bold; font-family:var(--font-mono);">0</div></div>
+            </div>
+            <div id="progress-intel" class="progress-intel">
+                <div class="intel-title">Career Outlook</div>
+                <div class="intel-item"><span>Current arc</span><strong id="intel-arc">Bootstrapping</strong></div>
+                <div class="intel-item"><span>Next prestige word goal</span><strong id="intel-words">1,000 words</strong></div>
+                <div class="intel-item"><span>Cheapest upgrade</span><strong id="intel-upgrade">Ballpoint Pen · $15</strong></div>
             </div>
         </div>
 
@@ -367,7 +402,7 @@
     <!-- MODALS -->
     <div id="setup-modal" class="modal-overlay">
         <div class="card-panel" style="width:600px;">
-            <h2 style="letter-spacing:8px; border-bottom:1px solid #1a1a1a; padding-bottom:20px; margin:0 0 30px 0; text-align: center; font-weight: 900;">MANIFESTO</h2>
+            <h2 style="letter-spacing:8px; border-bottom:1px solid #1a1a1a; padding-bottom:20px; margin:0 0 30px 0; text-align: center; font-weight: 900;">STUDIO BRIEF</h2>
             <div class="modal-scroll-area">
                 <div style="margin-bottom:40px;">
                     <label style="font-size:0.65rem; text-transform:uppercase; color:#444; display:block; margin-bottom:12px; letter-spacing: 2px; font-weight: bold;">0.1 / Working Title</label>
@@ -384,7 +419,7 @@
                 </div>
             </div>
             <div style="margin-top:20px; border-top:1px solid #111; padding-top:20px; text-align: right; opacity: 0.2; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 2px;">
-                SYSTEMS ONLINE / PROJECT INITIATION v2.0
+                SYSTEMS ONLINE / STUDIO BOOTSTRAP v2.1
             </div>
         </div>
     </div>
@@ -392,7 +427,7 @@
     <div id="job-modal" class="modal-overlay">
         <div class="card-panel">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-                <h2 style="margin:0; font-size:1.4rem; letter-spacing:4px; font-weight: 900;">JOB BOARD</h2>
+                <h2 style="margin:0; font-size:1.4rem; letter-spacing:4px; font-weight: 900;">CONTRACT BOARD</h2>
                 <button onclick="toggleJobBoard()" style="background:none; border:none; color:#444; font-size:2rem; cursor:pointer;">×</button>
             </div>
             <div id="job-list" style="overflow-y:auto; flex:1; padding-right:10px;"></div>
@@ -401,18 +436,18 @@
 
     <div id="critique-modal" class="modal-overlay" onclick="closeCritique()">
         <div class="critique-card" onclick="event.stopPropagation()">
-            <div style="font-size:0.65rem; letter-spacing:3px; color:#555; text-transform:uppercase; font-weight: bold; margin-bottom: 10px;">Evaluation Report</div>
+            <div style="font-size:0.65rem; letter-spacing:3px; color:#555; text-transform:uppercase; font-weight: bold; margin-bottom: 10px;">Release Debrief</div>
             <div id="critique-score" style="font-size:5rem; font-weight:900; font-family:var(--font-mono); margin:10px 0;">0.0</div>
             <div id="critique-text" style="font-size:1.1rem; margin:25px 0; color:#aaa; line-height:1.7; font-style:italic;"></div>
             <div id="critique-earnings" style="font-family:var(--font-mono); font-size:1.8rem; background:#000; padding:20px; border-radius:10px; margin-bottom:30px; border:1px solid #111;"></div>
-            <button class="btn-primary" style="width:100%" onclick="closeCritique()">Keep Writing</button>
+            <button class="btn-primary" style="width:100%" onclick="closeCritique()">Continue Development</button>
         </div>
     </div>
 
     <div id="archive-modal" class="modal-overlay" onclick="closeArchive()">
         <div class="card-panel" onclick="event.stopPropagation()">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 id="archive-title" style="margin:0; font-size:1rem; color:var(--accent); font-family:var(--font-mono);">Archived Part</h2>
+                <h2 id="archive-title" style="margin:0; font-size:1rem; color:var(--accent); font-family:var(--font-mono);">Archived Milestone</h2>
                 <button onclick="closeArchive()" style="background:none; border:none; color:#444; font-size:2rem; cursor:pointer;">×</button>
             </div>
             <div id="archive-content" class="archive-card"></div>
@@ -421,12 +456,56 @@
 
 <script>
     const apiKey = ""; 
+    const SAVE_KEY = "WriterTycoon_v21";
+    const LEGACY_SAVE_KEYS = ["WriterTycoon_v20"];
+    const SAVE_VERSION = 21;
+
+    const BALANCE = {
+        tickMs: {
+            autosave: 1000,
+            momentum: 1000,
+            royalties: 5000
+        },
+        momentum: {
+            gainPerInput: 1.5,
+            decayPerTick: 0.8,
+            bonusPerPoint: 0.0025,
+            milestoneGain: 18,
+            sideJobGain: 10
+        },
+        streak: {
+            scoreThreshold: 6.5,
+            bonusPerStep: 0.02,
+            maxBonus: 0.25,
+            milestoneEvery: 5,
+            milestoneCashPerStreak: 30
+        },
+        review: {
+            failureThreshold: 1.0,
+            noPayThreshold: 4.0,
+            failurePenaltyRate: 0.2,
+            fallbackMinScore: 1,
+            fallbackScoreRange: 9
+        },
+        project: {
+            completionCashBase: 500,
+            royaltyPerScorePoint: 0.05,
+            milestoneBasePayout: 100,
+            milestonePayoutStep: 20,
+            milestoneBaseWords: 150,
+            milestoneWordsStep: 50
+        },
+        reputation: {
+            multiplierPerRep: 0.05
+        }
+    };
 
     const GAME = {
         cash: 0, totalWords: 0, publishedCount: 0, multiplier: 1.0,
         specialty: null, projectName: "", manuscript: [], 
         reputation: 0, royaltiesPerTick: 0,
         momentum: 0,
+        streak: 0, bestStreak: 0,
         ui: { sidebarCollapsed: false, dashboardCollapsed: false },
         cooldowns: {}, upgrades: { pen: 0, notebook: 0, lamp: 0, keyboard: 0, coffee: 0, chair: 0, marketing: 0 }
     };
@@ -471,26 +550,26 @@
         applyUIState();
 
         if (document.getElementById('game-log').children.length === 0) {
-            log('SYSTEM INITIALIZED', 'Literary engine online. Waiting for draft...', false);
+            log('SYSTEM INITIALIZED', 'Studio systems online. Awaiting first contract...', false);
         }
 
         editor.addEventListener('input', handleInput);
-        editor.addEventListener('input', () => adjustMomentum(1.5));
+        editor.addEventListener('input', () => adjustMomentum(BALANCE.momentum.gainPerInput));
         setInterval(() => { 
             saveGame(); 
             if (document.getElementById('job-modal').classList.contains('open')) renderJobBoard(); 
-        }, 1000);
+        }, BALANCE.tickMs.autosave);
 
         setInterval(() => {
-            adjustMomentum(-0.8);
-        }, 1000);
+            adjustMomentum(-BALANCE.momentum.decayPerTick);
+        }, BALANCE.tickMs.momentum);
 
         setInterval(() => {
             if (GAME.royaltiesPerTick > 0) {
                 GAME.cash += GAME.royaltiesPerTick;
                 renderStats();
             }
-        }, 5000);
+        }, BALANCE.tickMs.royalties);
     }
 
     function toggleSidebar() {
@@ -523,31 +602,52 @@
         GAME.manuscript = [];
         document.getElementById('setup-modal').classList.remove('open');
         refreshUI();
-        log('MANIFESTO BEGUN', `${title} (${spec}) project initiated.`, 'milestone');
+        log('STUDIO BRIEF LOCKED', `${title} (${spec}) production slate initiated.`, 'milestone');
         saveGame();
     }
 
     function refreshUI() {
-        editor.disabled = false;
-        document.getElementById('project-label').innerText = `${GAME.projectName}`;
-        document.getElementById('project-display-name').innerText = GAME.projectName;
-        document.getElementById('project-type-tag').innerText = GAME.specialty.toUpperCase();
-        
+        const hasActiveProject = !!GAME.specialty;
+        editor.disabled = !hasActiveProject;
+        document.getElementById('project-label').innerText = hasActiveProject ? `${GAME.projectName}` : 'SELECT PROJECT';
+        document.getElementById('project-display-name').innerText = hasActiveProject ? GAME.projectName : '-';
+        document.getElementById('project-type-tag').innerText = hasActiveProject ? GAME.specialty.toUpperCase() : '-';
+
         const actionsDiv = document.getElementById('project-actions');
-        if (GAME.manuscript.length >= 3) {
+        if (!hasActiveProject) {
+            actionsDiv.innerHTML = `<button disabled style="width:100%; font-size:0.7rem; padding:10px; background:#0b0b0b; border:1px solid #181818; color:#444; border-radius:6px; font-weight: bold; text-transform: uppercase;">Start a studio brief to export</button>`;
+        } else if (GAME.manuscript.length >= 3) {
             actionsDiv.innerHTML = `
-                <button onclick="completeProject()" class="btn-gold">PUBLISH BOOK</button>
-                <button onclick="exportManuscript()" style="width:100%; font-size:0.6rem; padding:8px; background:none; border:none; color:#666; cursor:pointer; margin-top:5px;">EXPORT .MD</button>
+                <button onclick="completeProject()" class="btn-gold">SHIP PROJECT</button>
+                <button onclick="exportManuscript()" style="width:100%; font-size:0.6rem; padding:8px; background:none; border:none; color:#666; cursor:pointer; margin-top:5px;">EXPORT DESIGN DOC</button>
             `;
         } else {
-            actionsDiv.innerHTML = `<button onclick="exportManuscript()" style="width:100%; font-size:0.7rem; padding:10px; background:#111; border:1px solid #222; color:#888; cursor:pointer; border-radius:6px; font-weight: bold; text-transform: uppercase;">Export .MD</button>`;
+            actionsDiv.innerHTML = `<button onclick="exportManuscript()" style="width:100%; font-size:0.7rem; padding:10px; background:#111; border:1px solid #222; color:#888; cursor:pointer; border-radius:6px; font-weight: bold; text-transform: uppercase;">Export Design Doc</button>`;
         }
 
         renderManuscript();
         renderStats();
         renderShop();
+        renderProgressIntel();
         renderMomentum();
         handleInput();
+    }
+
+    function renderProgressIntel() {
+        const arc = !GAME.specialty ? 'Searching for a concept' : (GAME.manuscript.length >= 3 ? 'Launch-ready manuscript' : 'Drafting in progress');
+        document.getElementById('intel-arc').innerText = arc;
+
+        const nextWordGoal = Math.ceil((GAME.totalWords + 1) / 1000) * 1000;
+        const wordsRemaining = Math.max(0, nextWordGoal - GAME.totalWords);
+        document.getElementById('intel-words').innerText = wordsRemaining === 0 ? 'Goal reached' : `${wordsRemaining.toLocaleString()} words`;
+
+        const cheapestUpgrade = UPGRADES
+            .map(u => {
+                const lvl = GAME.upgrades[u.id] || 0;
+                return { name: u.name, cost: Math.floor(u.baseCost * Math.pow(u.costMult, lvl)) };
+            })
+            .sort((a, b) => a.cost - b.cost)[0];
+        document.getElementById('intel-upgrade').innerText = `${cheapestUpgrade.name} · $${cheapestUpgrade.cost.toLocaleString()}${GAME.streak > 0 ? ` / +${(getStreakBonus() * 100).toFixed(0)}% streak` : ''}`;
     }
 
     function adjustMomentum(delta) {
@@ -559,7 +659,11 @@
     }
 
     function getMomentumBonus() {
-        return GAME.momentum * 0.0025;
+        return GAME.momentum * BALANCE.momentum.bonusPerPoint;
+    }
+
+    function getStreakBonus() {
+        return Math.min(BALANCE.streak.maxBonus, GAME.streak * BALANCE.streak.bonusPerStep);
     }
 
     function renderMomentum() {
@@ -583,7 +687,7 @@
             progressBar.style.width = `${percent}%`;
             
             if (remaining === 0) { 
-                btnPublish.innerText = "Submit Part"; 
+                btnPublish.innerText = "Ship Milestone"; 
                 btnPublish.disabled = false; 
                 btnPublish.style.background = "var(--accent)"; 
                 btnPublish.style.color = "#000";
@@ -598,7 +702,7 @@
                 progressBar.classList.remove('complete');
             }
         } else { 
-            btnPublish.innerText = "Consult Job Board"; 
+            btnPublish.innerText = "Open Contract Board"; 
             btnPublish.disabled = false; 
             btnPublish.style.background = "transparent"; 
             btnPublish.style.color = "var(--accent)";
@@ -608,6 +712,10 @@
     }
 
     function handlePublishClick() {
+        if (!GAME.specialty) {
+            document.getElementById('setup-modal').classList.add('open');
+            return;
+        }
         if (!GAME.currentJob) toggleJobBoard();
         else publishWork();
     }
@@ -615,7 +723,7 @@
     async function callGeminiEvaluation(text, job) {
         const context = GAME.manuscript.length > 0 ? `The previous parts were: ${GAME.manuscript.map(m => m.title).join(', ')}.` : "This is the start.";
         const careerPhase = GAME.manuscript.length < 4 ? "early discovery stage" : "professional development stage";
-        const systemPrompt = `You are a professional editor evaluating a ${GAME.specialty} submission for "${GAME.projectName}". Phase: ${careerPhase}. Goal: ${job.title} - ${job.brief}. Context: ${context}. Score quality 1.0 to 10.0. Return ONLY JSON: { "score": number, "critique": "one sentence feedback" }`;
+        const systemPrompt = `You are a veteran creative director evaluating a ${GAME.specialty} production milestone for "${GAME.projectName}". Phase: ${careerPhase}. Contract Goal: ${job.title} - ${job.brief}. Context: ${context}. Score quality 1.0 to 10.0. Return ONLY JSON: { "score": number, "critique": "one sentence feedback" }`;
 
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
@@ -632,13 +740,27 @@
         const job = GAME.currentJob;
         const words = text.split(/\s+/).length;
         document.getElementById('review-overlay').style.display = 'flex';
-        const aiResult = await callGeminiEvaluation(text, job) || { score: (Math.random() * 9 + 1).toFixed(1), critique: "Editor reviewed this offline." };
+        const aiResult = await callGeminiEvaluation(text, job) || { score: (Math.random() * BALANCE.review.fallbackScoreRange + BALANCE.review.fallbackMinScore).toFixed(1), critique: "Editor reviewed this offline." };
         document.getElementById('review-overlay').style.display = 'none';
         const score = parseFloat(aiResult.score);
         const quality = score / 10;
-        let earnings = (score <= 1.0) ? -(job.payout * 0.2) : (score < 4.0 ? 0 : (job.payout * GAME.multiplier * quality * (1 + getMomentumBonus())));
+        const bonusMult = 1 + getMomentumBonus() + getStreakBonus();
+        let earnings = (score <= BALANCE.review.failureThreshold) ? -(job.payout * BALANCE.review.failurePenaltyRate) : (score < BALANCE.review.noPayThreshold ? 0 : (job.payout * GAME.multiplier * quality * bonusMult));
         GAME.cash += earnings; GAME.totalWords += words; GAME.publishedCount++;
-        adjustMomentum(job.isMilestone ? 18 : 10);
+
+        if (score >= BALANCE.streak.scoreThreshold && earnings > 0) {
+            GAME.streak++;
+            GAME.bestStreak = Math.max(GAME.bestStreak || 0, GAME.streak);
+            if (GAME.streak % BALANCE.streak.milestoneEvery === 0) {
+                const streakCash = BALANCE.streak.milestoneCashPerStreak * GAME.streak;
+                GAME.cash += streakCash;
+                log('STREAK BONUS', `Hot streak x${GAME.streak}! +$${streakCash.toFixed(2)} bonus paid.`, 'milestone');
+            }
+        } else {
+            GAME.streak = 0;
+        }
+
+        adjustMomentum(job.isMilestone ? BALANCE.momentum.milestoneGain : BALANCE.momentum.sideJobGain);
         if (job.isMilestone) { GAME.manuscript.push({ title: job.title, text: text, score: aiResult.score, date: new Date().toLocaleDateString() }); updateRoyalties(); }
         if (job.cooldown) GAME.cooldowns[job.id] = Date.now() + job.cooldown;
         showCritiqueModal(aiResult.score, aiResult.critique, earnings);
@@ -649,7 +771,7 @@
     function completeProject() {
         if (!confirm("Publish this project? Soft reset will follow.")) return;
         const avgScore = GAME.manuscript.reduce((sum, m) => sum + parseFloat(m.score), 0) / GAME.manuscript.length;
-        const bonus = 500 * avgScore * GAME.multiplier;
+        const bonus = BALANCE.project.completionCashBase * avgScore * GAME.multiplier;
         GAME.cash += bonus; GAME.reputation += Math.floor(avgScore * 2);
         log('PROJECT COMPLETED', `${GAME.projectName} published! Earned $${bonus.toFixed(2)}`, 'milestone');
         GAME.manuscript = []; GAME.projectName = ""; GAME.specialty = null; GAME.currentJob = null; GAME.royaltiesPerTick = 0;
@@ -660,7 +782,7 @@
     }
 
     function updateRoyalties() {
-        let r = 0; GAME.manuscript.forEach(m => { r += (parseFloat(m.score) * 0.05); });
+        let r = 0; GAME.manuscript.forEach(m => { r += (parseFloat(m.score) * BALANCE.project.royaltyPerScorePoint); });
         GAME.royaltiesPerTick = r;
     }
 
@@ -679,21 +801,22 @@
     function renderJobBoard() {
         const list = document.getElementById('job-list'); list.innerHTML = '';
         const milestoneNum = GAME.manuscript.length + 1;
-        const milestoneNames = { 'Novel': 'Chapter', 'Screenplay': 'Scene', 'Play': 'Act', 'Poetry': 'Verse', 'Essay': 'Segment', 'Sketch Comedy': 'Sketch' };
-        const mName = milestoneNames[GAME.specialty] || "Part";
-        const milestoneJob = { id: 'm_current', isMilestone: true, title: `${mName} ${milestoneNum}`, brief: `Next milestone.`, payout: 100 + (milestoneNum * 20), minWords: 150 + (milestoneNum * 50) };
+        const milestoneNames = { 'Novel': 'Sprint', 'Screenplay': 'Vertical Slice', 'Play': 'Milestone', 'Poetry': 'Prototype', 'Essay': 'Design Pass', 'Sketch Comedy': 'Feature Beat' };
+        const mName = milestoneNames[GAME.specialty] || "Milestone";
+        const milestoneJob = { id: 'm_current', isMilestone: true, title: `${mName} ${milestoneNum}`, brief: `Next milestone.`, payout: BALANCE.project.milestoneBasePayout + (milestoneNum * BALANCE.project.milestonePayoutStep), minWords: BALANCE.project.milestoneBaseWords + (milestoneNum * BALANCE.project.milestoneWordsStep) };
         const filteredSideJobs = JOBS.filter(j => j.type === 'Any' || j.type === GAME.specialty);
         [milestoneJob, ...filteredSideJobs].forEach(job => {
             const readyAt = GAME.cooldowns[job.id] || 0;
             const isOnCooldown = Date.now() < readyAt;
             const el = document.createElement('div');
             el.className = `job-card ${job.isMilestone ? 'milestone' : ''} ${isOnCooldown ? 'on-cooldown' : ''}`;
-            el.innerHTML = `<div><div style="font-weight:bold; color:#fff; display:flex; align-items:center;">${job.isMilestone ? '<span class="tag milestone-tag">PROJECT</span>' : ''}${job.title}</div><div style="font-size:0.75rem; opacity:0.5; margin-top:5px;">${job.brief}</div><div style="font-size:0.65rem; margin-top:10px; opacity:0.3;">Min: ${job.minWords} words</div></div><div style="text-align:right"><div style="font-family:var(--font-mono); font-weight:bold; color:var(--accent); font-size: 1.1rem; margin-bottom:10px;">$${(job.payout * GAME.multiplier).toFixed(0)}</div><button class="btn-primary" ${isOnCooldown ? 'disabled' : ''} onclick='acceptJob(${JSON.stringify(job).replace(/'/g, "&apos;")})'>${isOnCooldown ? `Wait` : 'Accept'}</button></div>`;
+            const estimated = job.payout * GAME.multiplier * (1 + getMomentumBonus() + getStreakBonus());
+            el.innerHTML = `<div><div style="font-weight:bold; color:#fff; display:flex; align-items:center;">${job.isMilestone ? '<span class="tag milestone-tag">PROJECT</span>' : ''}${job.title}</div><div style="font-size:0.75rem; opacity:0.5; margin-top:5px;">${job.brief}</div><div style="font-size:0.65rem; margin-top:10px; opacity:0.3;">Min: ${job.minWords} words</div></div><div style="text-align:right"><div style="font-family:var(--font-mono); font-weight:bold; color:var(--accent); font-size: 1.1rem; margin-bottom:2px;">$${estimated.toFixed(0)}</div><div style="font-size:0.62rem; opacity:0.35; margin-bottom:8px;">est. incl. flow/streak</div><button class="btn-primary" ${isOnCooldown ? 'disabled' : ''} onclick='acceptJob(${JSON.stringify(job).replace(/'/g, "&apos;")})'>${isOnCooldown ? `Wait` : 'Accept'}</button></div>`;
             list.appendChild(el);
         });
     }
 
-    function acceptJob(job) { GAME.currentJob = job; document.getElementById('job-modal').classList.remove('open'); document.getElementById('active-job-bar').style.display = 'flex'; document.getElementById('current-job-target').innerText = job.title; editor.placeholder = `Goal: ${job.brief}`; handleInput(); }
+    function acceptJob(job) { GAME.currentJob = job; document.getElementById('job-modal').classList.remove('open'); document.getElementById('active-job-bar').style.display = 'flex'; document.getElementById('current-job-target').innerText = job.title; editor.placeholder = `Deliverable: ${job.brief}`; handleInput(); }
     function toggleJobBoard() { document.getElementById('job-modal').classList.toggle('open'); if(document.getElementById('job-modal').classList.contains('open')) renderJobBoard(); }
     function closeCritique() { document.getElementById('critique-modal').classList.remove('open'); }
     function closeArchive() { document.getElementById('archive-modal').classList.remove('open'); }
@@ -702,12 +825,80 @@
     function showArchive(m) { document.getElementById('archive-title').innerText = m.title; document.getElementById('archive-content').innerText = m.text; document.getElementById('archive-modal').classList.add('open'); }
     function exportManuscript() { if (GAME.manuscript.length === 0) return; let output = `# ${GAME.projectName}\n\n`; GAME.manuscript.forEach(m => { output += `## ${m.title}\n\n${m.text}\n\n`; }); const blob = new Blob([output], { type: 'text/markdown' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${GAME.projectName}.md`; a.click(); }
     function buyUpgrade(idx) { const item = UPGRADES[idx]; const lvl = GAME.upgrades[item.id] || 0; const cost = Math.floor(item.baseCost * Math.pow(item.costMult, lvl)); if (GAME.cash >= cost) { GAME.cash -= cost; GAME.upgrades[item.id]++; recalculateMultiplier(); saveGame(); refreshUI(); log('UPGRADE PURCHASED', `${item.name} acquired.`, 'success'); } }
-    function recalculateMultiplier() { let m = 1.0; UPGRADES.forEach(u => { m += (GAME.upgrades[u.id] || 0) * u.boost; }); m += (GAME.reputation || 0) * 0.05; GAME.multiplier = m; }
-    function renderStats() { document.getElementById('bank-balance').innerText = `$${GAME.cash.toLocaleString(undefined, {minimumFractionDigits: 2})}`; document.getElementById('total-published').innerText = `${GAME.manuscript.length} Parts`; document.getElementById('total-words').innerText = GAME.totalWords.toLocaleString(); document.getElementById('multiplier-badge').innerText = `${GAME.multiplier.toFixed(2)}x / +${(getMomentumBonus() * 100).toFixed(1)}% flow`; if (GAME.reputation > 0) { const r = document.getElementById('rep-badge'); r.style.display = 'block'; r.innerText = `Rep: ${GAME.reputation}`; } if (GAME.royaltiesPerTick > 0) { const r = document.getElementById('royalty-display'); r.style.opacity = 1; r.innerText = `+ $${GAME.royaltiesPerTick.toFixed(2)} / 5s`; } }
+    function recalculateMultiplier() { let m = 1.0; UPGRADES.forEach(u => { m += (GAME.upgrades[u.id] || 0) * u.boost; }); m += (GAME.reputation || 0) * BALANCE.reputation.multiplierPerRep; GAME.multiplier = m; }
+    function renderStats() { document.getElementById('bank-balance').innerText = `$${GAME.cash.toLocaleString(undefined, {minimumFractionDigits: 2})}`; document.getElementById('total-published').innerText = `${GAME.manuscript.length} Milestones`; document.getElementById('total-words').innerText = GAME.totalWords.toLocaleString(); document.getElementById('multiplier-badge').innerText = `${GAME.multiplier.toFixed(2)}x / +${(getMomentumBonus() * 100).toFixed(1)}% flow / +${(getStreakBonus() * 100).toFixed(0)}% streak`; if (GAME.reputation > 0) { const r = document.getElementById('rep-badge'); r.style.display = 'block'; r.innerText = `Rep: ${GAME.reputation}`; } else { document.getElementById('rep-badge').style.display = 'none'; } if (GAME.streak > 0) { const s = document.getElementById('streak-badge'); s.style.display = 'block'; s.innerText = `Streak: x${GAME.streak}`; } else { document.getElementById('streak-badge').style.display = 'none'; } if (GAME.royaltiesPerTick > 0) { const r = document.getElementById('royalty-display'); r.style.opacity = 1; r.innerText = `+ $${GAME.royaltiesPerTick.toFixed(2)} / 5s`; } else { document.getElementById('royalty-display').style.opacity = 0; } }
     function renderShop() { const cont = document.getElementById('shop-container'); cont.innerHTML = ''; UPGRADES.forEach((u, i) => { const lvl = GAME.upgrades[u.id] || 0; const cost = Math.floor(u.baseCost * Math.pow(u.costMult, lvl)); const card = document.createElement('div'); card.className = `upgrade-card ${GAME.cash < cost ? 'disabled' : ''}`; card.onclick = () => buyUpgrade(i); card.innerHTML = `<div class="upgrade-info"><h4>${u.name} (Lvl ${lvl})</h4><p>${u.desc}</p></div><div style="font-weight:bold; color:var(--accent)">$${cost}</div>`; cont.appendChild(card); }); }
     function log(t, d, type) { const entry = document.createElement('div'); entry.className = `log-entry ${type}`; entry.innerHTML = `<div class="log-meta">${new Date().toLocaleTimeString()}</div><strong>${t}</strong><br>${d}`; const logBox = document.getElementById('game-log'); logBox.prepend(entry); logBox.scrollTop = 0; }
-    function saveGame() { localStorage.setItem('WriterTycoon_v20', JSON.stringify(GAME)); }
-    function loadGame() { const saved = localStorage.getItem('WriterTycoon_v20'); if (saved) { Object.assign(GAME, JSON.parse(saved)); recalculateMultiplier(); updateRoyalties(); } }
+
+    function normalizeGameState(raw = {}) {
+        const safe = raw && typeof raw === 'object' ? raw : {};
+        const safeUI = safe.ui && typeof safe.ui === 'object' ? safe.ui : {};
+        const safeUpgrades = safe.upgrades && typeof safe.upgrades === 'object' ? safe.upgrades : {};
+
+        return {
+            ...safe,
+            manuscript: Array.isArray(safe.manuscript) ? safe.manuscript : [],
+            cooldowns: safe.cooldowns && typeof safe.cooldowns === 'object' ? safe.cooldowns : {},
+            ui: {
+                sidebarCollapsed: !!safeUI.sidebarCollapsed,
+                dashboardCollapsed: !!safeUI.dashboardCollapsed
+            },
+            upgrades: {
+                ...GAME.upgrades,
+                ...safeUpgrades
+            },
+            streak: Number.isFinite(safe.streak) ? safe.streak : 0,
+            bestStreak: Number.isFinite(safe.bestStreak) ? safe.bestStreak : 0
+        };
+    }
+
+    function migrateSaveData(raw, sourceKey) {
+        const data = normalizeGameState(raw);
+        const meta = data.meta && typeof data.meta === 'object' ? data.meta : {};
+        const saveVersion = Number.isFinite(meta.saveVersion) ? meta.saveVersion : 20;
+
+        if (saveVersion < SAVE_VERSION || sourceKey !== SAVE_KEY) {
+            data.meta = {
+                ...meta,
+                saveVersion: SAVE_VERSION,
+                migratedFrom: sourceKey,
+                migratedAt: Date.now()
+            };
+            localStorage.removeItem(sourceKey);
+            localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+        }
+
+        return data;
+    }
+
+    function saveGame() {
+        const payload = {
+            ...GAME,
+            meta: {
+                saveVersion: SAVE_VERSION,
+                savedAt: Date.now()
+            }
+        };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+    }
+
+    function loadGame() {
+        const keysToTry = [SAVE_KEY, ...LEGACY_SAVE_KEYS];
+        for (const key of keysToTry) {
+            const serialized = localStorage.getItem(key);
+            if (!serialized) continue;
+            try {
+                const parsed = JSON.parse(serialized);
+                const migrated = migrateSaveData(parsed, key);
+                Object.assign(GAME, normalizeGameState(migrated));
+                recalculateMultiplier();
+                updateRoyalties();
+                return;
+            } catch (e) {
+                console.warn(`Failed to parse save key: ${key}`);
+            }
+        }
+    }
 
     init();
 </script>
