@@ -456,6 +456,9 @@
 
 <script>
     const apiKey = ""; 
+    const SAVE_KEY = "WriterTycoon_v21";
+    const LEGACY_SAVE_KEYS = ["WriterTycoon_v20"];
+    const SAVE_VERSION = 21;
 
     const GAME = {
         cash: 0, totalWords: 0, publishedCount: 0, multiplier: 1.0,
@@ -786,8 +789,76 @@
     function renderStats() { document.getElementById('bank-balance').innerText = `$${GAME.cash.toLocaleString(undefined, {minimumFractionDigits: 2})}`; document.getElementById('total-published').innerText = `${GAME.manuscript.length} Parts`; document.getElementById('total-words').innerText = GAME.totalWords.toLocaleString(); document.getElementById('multiplier-badge').innerText = `${GAME.multiplier.toFixed(2)}x / +${(getMomentumBonus() * 100).toFixed(1)}% flow / +${(getStreakBonus() * 100).toFixed(0)}% streak`; if (GAME.reputation > 0) { const r = document.getElementById('rep-badge'); r.style.display = 'block'; r.innerText = `Rep: ${GAME.reputation}`; } else { document.getElementById('rep-badge').style.display = 'none'; } if (GAME.streak > 0) { const s = document.getElementById('streak-badge'); s.style.display = 'block'; s.innerText = `Streak: x${GAME.streak}`; } else { document.getElementById('streak-badge').style.display = 'none'; } if (GAME.royaltiesPerTick > 0) { const r = document.getElementById('royalty-display'); r.style.opacity = 1; r.innerText = `+ $${GAME.royaltiesPerTick.toFixed(2)} / 5s`; } else { document.getElementById('royalty-display').style.opacity = 0; } }
     function renderShop() { const cont = document.getElementById('shop-container'); cont.innerHTML = ''; UPGRADES.forEach((u, i) => { const lvl = GAME.upgrades[u.id] || 0; const cost = Math.floor(u.baseCost * Math.pow(u.costMult, lvl)); const card = document.createElement('div'); card.className = `upgrade-card ${GAME.cash < cost ? 'disabled' : ''}`; card.onclick = () => buyUpgrade(i); card.innerHTML = `<div class="upgrade-info"><h4>${u.name} (Lvl ${lvl})</h4><p>${u.desc}</p></div><div style="font-weight:bold; color:var(--accent)">$${cost}</div>`; cont.appendChild(card); }); }
     function log(t, d, type) { const entry = document.createElement('div'); entry.className = `log-entry ${type}`; entry.innerHTML = `<div class="log-meta">${new Date().toLocaleTimeString()}</div><strong>${t}</strong><br>${d}`; const logBox = document.getElementById('game-log'); logBox.prepend(entry); logBox.scrollTop = 0; }
-    function saveGame() { localStorage.setItem('WriterTycoon_v20', JSON.stringify(GAME)); }
-    function loadGame() { const saved = localStorage.getItem('WriterTycoon_v20'); if (saved) { Object.assign(GAME, JSON.parse(saved)); GAME.streak = Number.isFinite(GAME.streak) ? GAME.streak : 0; GAME.bestStreak = Number.isFinite(GAME.bestStreak) ? GAME.bestStreak : 0; recalculateMultiplier(); updateRoyalties(); } }
+
+    function normalizeGameState(raw = {}) {
+        const safe = raw && typeof raw === 'object' ? raw : {};
+        const safeUI = safe.ui && typeof safe.ui === 'object' ? safe.ui : {};
+        const safeUpgrades = safe.upgrades && typeof safe.upgrades === 'object' ? safe.upgrades : {};
+
+        return {
+            ...safe,
+            manuscript: Array.isArray(safe.manuscript) ? safe.manuscript : [],
+            cooldowns: safe.cooldowns && typeof safe.cooldowns === 'object' ? safe.cooldowns : {},
+            ui: {
+                sidebarCollapsed: !!safeUI.sidebarCollapsed,
+                dashboardCollapsed: !!safeUI.dashboardCollapsed
+            },
+            upgrades: {
+                ...GAME.upgrades,
+                ...safeUpgrades
+            },
+            streak: Number.isFinite(safe.streak) ? safe.streak : 0,
+            bestStreak: Number.isFinite(safe.bestStreak) ? safe.bestStreak : 0
+        };
+    }
+
+    function migrateSaveData(raw, sourceKey) {
+        const data = normalizeGameState(raw);
+        const meta = data.meta && typeof data.meta === 'object' ? data.meta : {};
+        const saveVersion = Number.isFinite(meta.saveVersion) ? meta.saveVersion : 20;
+
+        if (saveVersion < SAVE_VERSION || sourceKey !== SAVE_KEY) {
+            data.meta = {
+                ...meta,
+                saveVersion: SAVE_VERSION,
+                migratedFrom: sourceKey,
+                migratedAt: Date.now()
+            };
+            localStorage.removeItem(sourceKey);
+            localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+        }
+
+        return data;
+    }
+
+    function saveGame() {
+        const payload = {
+            ...GAME,
+            meta: {
+                saveVersion: SAVE_VERSION,
+                savedAt: Date.now()
+            }
+        };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+    }
+
+    function loadGame() {
+        const keysToTry = [SAVE_KEY, ...LEGACY_SAVE_KEYS];
+        for (const key of keysToTry) {
+            const serialized = localStorage.getItem(key);
+            if (!serialized) continue;
+            try {
+                const parsed = JSON.parse(serialized);
+                const migrated = migrateSaveData(parsed, key);
+                Object.assign(GAME, normalizeGameState(migrated));
+                recalculateMultiplier();
+                updateRoyalties();
+                return;
+            } catch (e) {
+                console.warn(`Failed to parse save key: ${key}`);
+            }
+        }
+    }
 
     init();
 </script>
