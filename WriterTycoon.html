@@ -308,7 +308,7 @@
     <!-- SIDEBAR -->
     <div id="sidebar" class="sidebar">
         <div class="sidebar-header">
-            <div style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 3px; opacity: 0.4; margin-bottom: 8px;">Project Pipeline</div>
+            <div style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 3px; opacity: 0.4; margin-bottom: 8px;">Manuscript Pipeline</div>
             <div id="project-display-name" style="font-weight: 900; font-family: var(--font-mono); color: var(--accent); font-size: 1.1rem;">-</div>
             <div id="project-type-tag" style="font-size: 0.65rem; opacity: 0.3; margin-top: 5px;">-</div>
             <div id="project-actions" style="margin-top: 20px;">
@@ -356,11 +356,11 @@
         </div>
 
         <div class="momentum-wrap" style="padding:12px 14px;">
-            <div class="momentum-head" style="margin-bottom:10px;"><span>Production Mode</span><span id="mode-note" style="opacity:0.6;">Balanced output</span></div>
+            <div class="momentum-head" style="margin-bottom:10px;"><span>Writing Mode</span><span id="mode-note" style="opacity:0.6;">Steady Drafting</span></div>
             <select id="production-mode" style="width:100%; background:#0b0b0b; color:var(--text); border:1px solid #222; border-radius:6px; padding:10px; font-family:var(--font-mono);">
-                <option value="balanced">Balanced</option>
-                <option value="crunch">Crunch</option>
-                <option value="polish">Polish</option>
+                <option value="balanced">Steady</option>
+                <option value="crunch">Fast Draft</option>
+                <option value="polish">Editorial Polish</option>
             </select>
         </div>
         
@@ -373,7 +373,7 @@
         
         <div class="desk-controls">
             <div style="font-family: var(--font-mono); opacity: 0.4; font-size: 0.85rem;">Word Count: <span id="word-count" style="color:#fff; font-weight:bold;">0</span></div>
-            <button id="btn-publish" class="btn-primary" disabled onclick="handlePublishClick()">Open Contract Board</button>
+            <button id="btn-publish" class="btn-primary" disabled onclick="handlePublishClick()">Open Assignment Board</button>
         </div>
     </div>
 
@@ -415,7 +415,7 @@
     <!-- MODALS -->
     <div id="setup-modal" class="modal-overlay">
         <div class="card-panel" style="width:600px;">
-            <h2 style="letter-spacing:8px; border-bottom:1px solid #1a1a1a; padding-bottom:20px; margin:0 0 30px 0; text-align: center; font-weight: 900;">STUDIO BRIEF</h2>
+            <h2 style="letter-spacing:8px; border-bottom:1px solid #1a1a1a; padding-bottom:20px; margin:0 0 30px 0; text-align: center; font-weight: 900;">WRITER BRIEF</h2>
             <div class="modal-scroll-area">
                 <div style="margin-bottom:40px;">
                     <label style="font-size:0.65rem; text-transform:uppercase; color:#444; display:block; margin-bottom:12px; letter-spacing: 2px; font-weight: bold;">0.1 / Working Title</label>
@@ -432,7 +432,7 @@
                 </div>
             </div>
             <div style="margin-top:20px; border-top:1px solid #111; padding-top:20px; text-align: right; opacity: 0.2; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 2px;">
-                SYSTEMS ONLINE / STUDIO BOOTSTRAP v2.1
+                SYSTEMS ONLINE / WRITER BOOTSTRAP v2.2
             </div>
         </div>
     </div>
@@ -440,7 +440,7 @@
     <div id="job-modal" class="modal-overlay">
         <div class="card-panel">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-                <h2 style="margin:0; font-size:1.4rem; letter-spacing:4px; font-weight: 900;">CONTRACT BOARD</h2>
+                <h2 style="margin:0; font-size:1.4rem; letter-spacing:4px; font-weight: 900;">ASSIGNMENT BOARD</h2>
                 <button onclick="toggleJobBoard()" style="background:none; border:none; color:#444; font-size:2rem; cursor:pointer;">×</button>
             </div>
             <div id="job-list" style="overflow-y:auto; flex:1; padding-right:10px;"></div>
@@ -449,11 +449,11 @@
 
     <div id="critique-modal" class="modal-overlay" onclick="closeCritique()">
         <div class="critique-card" onclick="event.stopPropagation()">
-            <div style="font-size:0.65rem; letter-spacing:3px; color:#555; text-transform:uppercase; font-weight: bold; margin-bottom: 10px;">Release Debrief</div>
+            <div style="font-size:0.65rem; letter-spacing:3px; color:#555; text-transform:uppercase; font-weight: bold; margin-bottom: 10px;">Editor Debrief</div>
             <div id="critique-score" style="font-size:5rem; font-weight:900; font-family:var(--font-mono); margin:10px 0;">0.0</div>
             <div id="critique-text" style="font-size:1.1rem; margin:25px 0; color:#aaa; line-height:1.7; font-style:italic;"></div>
             <div id="critique-earnings" style="font-family:var(--font-mono); font-size:1.8rem; background:#000; padding:20px; border-radius:10px; margin-bottom:30px; border:1px solid #111;"></div>
-            <button class="btn-primary" style="width:100%" onclick="closeCritique()">Continue Development</button>
+            <button class="btn-primary" style="width:100%" onclick="closeCritique()">Continue Writing</button>
         </div>
     </div>
 
@@ -524,9 +524,9 @@
             debtInterestRatePerTick: 0.01
         },
         productionModes: {
-            balanced: { label: 'Balanced output', scoreDelta: 0, earningsMult: 1.0, burnMult: 1.0, streakDifficulty: 0 },
-            crunch: { label: 'Faster ship cadence', scoreDelta: -0.4, earningsMult: 1.12, burnMult: 1.35, streakDifficulty: 0.5 },
-            polish: { label: 'Higher quality focus', scoreDelta: 0.5, earningsMult: 0.96, burnMult: 0.9, streakDifficulty: -0.4 }
+            balanced: { label: 'Steady Drafting', scoreDelta: 0, earningsMult: 1.0, burnMult: 1.0, streakDifficulty: 0 },
+            crunch: { label: 'Fast Drafting', scoreDelta: -0.4, earningsMult: 1.12, burnMult: 1.35, streakDifficulty: 0.5 },
+            polish: { label: 'Editorial Polish', scoreDelta: 0.5, earningsMult: 0.96, burnMult: 0.9, streakDifficulty: -0.4 }
         }
     };
 
@@ -584,7 +584,7 @@
         applyUIState();
 
         if (document.getElementById('game-log').children.length === 0) {
-            log('SYSTEM INITIALIZED', 'Studio systems online. Awaiting first contract...', false);
+            log('SYSTEM INITIALIZED', 'Writer systems online. Awaiting first assignment...', false);
         }
 
         if (!GAME.market || !GAME.market.trend || Date.now() >= (GAME.market.expiresAt || 0)) {
@@ -652,7 +652,7 @@
         GAME.manuscript = [];
         document.getElementById('setup-modal').classList.remove('open');
         refreshUI();
-        log('STUDIO BRIEF LOCKED', `${title} (${spec}) production slate initiated.`, 'milestone');
+        log('WRITER BRIEF LOCKED', `${title} (${spec}) production slate initiated.`, 'milestone');
         saveGame();
     }
 
@@ -668,7 +668,7 @@
             actionsDiv.innerHTML = `<button disabled style="width:100%; font-size:0.7rem; padding:10px; background:#0b0b0b; border:1px solid #181818; color:#444; border-radius:6px; font-weight: bold; text-transform: uppercase;">Start a studio brief to export</button>`;
         } else if (GAME.manuscript.length >= 3) {
             actionsDiv.innerHTML = `
-                <button onclick="completeProject()" class="btn-gold">SHIP PROJECT</button>
+                <button onclick="completeProject()" class="btn-gold">PUBLISH COLLECTION</button>
                 <button onclick="exportManuscript()" style="width:100%; font-size:0.6rem; padding:8px; background:none; border:none; color:#666; cursor:pointer; margin-top:5px;">EXPORT DESIGN DOC</button>
             `;
         } else {
@@ -717,7 +717,7 @@
             expiresAt: Date.now() + BALANCE.market.trendDurationMs
         };
         if (!isInitial) {
-            log('MARKET SHIFT', `Demand swings toward ${next}.`, 'milestone');
+            log('MARKET SHIFT', `Reader demand shifts toward ${next}.`, 'milestone');
         }
         renderProgressIntel();
         renderStats();
@@ -839,7 +839,7 @@
                 progressBar.classList.remove('complete');
             }
         } else { 
-            btnPublish.innerText = "Open Contract Board"; 
+            btnPublish.innerText = "Open Assignment Board"; 
             btnPublish.disabled = false; 
             btnPublish.style.background = "transparent"; 
             btnPublish.style.color = "var(--accent)";
@@ -860,7 +860,7 @@
     async function callGeminiEvaluation(text, job) {
         const context = GAME.manuscript.length > 0 ? `The previous parts were: ${GAME.manuscript.map(m => m.title).join(', ')}.` : "This is the start.";
         const careerPhase = GAME.manuscript.length < 4 ? "early discovery stage" : "professional development stage";
-        const systemPrompt = `You are a veteran creative director evaluating a ${GAME.specialty} production milestone for "${GAME.projectName}". Phase: ${careerPhase}. Contract Goal: ${job.title} - ${job.brief}. Context: ${context}. Score quality 1.0 to 10.0. Return ONLY JSON: { "score": number, "critique": "one sentence feedback" }`;
+        const systemPrompt = `You are a veteran creative director evaluating a ${GAME.specialty} writing milestone for "${GAME.projectName}". Phase: ${careerPhase}. Assignment Goal: ${job.title} - ${job.brief}. Context: ${context}. Score quality 1.0 to 10.0. Return ONLY JSON: { "score": number, "critique": "one sentence feedback" }`;
 
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
@@ -941,7 +941,7 @@
     function renderJobBoard() {
         const list = document.getElementById('job-list'); list.innerHTML = '';
         const milestoneNum = GAME.manuscript.length + 1;
-        const milestoneNames = { 'Novel': 'Sprint', 'Screenplay': 'Vertical Slice', 'Play': 'Milestone', 'Poetry': 'Prototype', 'Essay': 'Design Pass', 'Sketch Comedy': 'Feature Beat' };
+        const milestoneNames = { 'Novel': 'Chapter', 'Screenplay': 'Scene', 'Play': 'Act', 'Poetry': 'Verse', 'Essay': 'Section', 'Sketch Comedy': 'Sketch' };
         const mName = milestoneNames[GAME.specialty] || "Milestone";
         const milestoneJob = { id: 'm_current', isMilestone: true, title: `${mName} ${milestoneNum}`, brief: `Next milestone.`, payout: BALANCE.project.milestoneBasePayout + (milestoneNum * BALANCE.project.milestonePayoutStep), minWords: BALANCE.project.milestoneBaseWords + (milestoneNum * BALANCE.project.milestoneWordsStep) };
         const filteredSideJobs = JOBS.filter(j => j.type === 'Any' || j.type === GAME.specialty);
@@ -956,7 +956,7 @@
         });
     }
 
-    function acceptJob(job) { GAME.currentJob = job; document.getElementById('job-modal').classList.remove('open'); document.getElementById('active-job-bar').style.display = 'flex'; document.getElementById('current-job-target').innerText = job.title; editor.placeholder = `Deliverable: ${job.brief}`; handleInput(); }
+    function acceptJob(job) { GAME.currentJob = job; document.getElementById('job-modal').classList.remove('open'); document.getElementById('active-job-bar').style.display = 'flex'; document.getElementById('current-job-target').innerText = job.title; editor.placeholder = `Brief: ${job.brief}`; handleInput(); }
     function toggleJobBoard() { document.getElementById('job-modal').classList.toggle('open'); if(document.getElementById('job-modal').classList.contains('open')) renderJobBoard(); }
     function closeCritique() { document.getElementById('critique-modal').classList.remove('open'); }
     function closeArchive() { document.getElementById('archive-modal').classList.remove('open'); }
