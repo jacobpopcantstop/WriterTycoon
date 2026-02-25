@@ -666,6 +666,10 @@
         return Math.min(BALANCE.streak.maxBonus, GAME.streak * BALANCE.streak.bonusPerStep);
     }
 
+    function getStreakBonus() {
+        return Math.min(0.25, GAME.streak * 0.02);
+    }
+
     function renderMomentum() {
         const pct = Math.round(GAME.momentum);
         const bonusPct = (getMomentumBonus() * 100).toFixed(1);
