@@ -460,6 +460,46 @@
     const LEGACY_SAVE_KEYS = ["WriterTycoon_v20"];
     const SAVE_VERSION = 21;
 
+    const BALANCE = {
+        tickMs: {
+            autosave: 1000,
+            momentum: 1000,
+            royalties: 5000
+        },
+        momentum: {
+            gainPerInput: 1.5,
+            decayPerTick: 0.8,
+            bonusPerPoint: 0.0025,
+            milestoneGain: 18,
+            sideJobGain: 10
+        },
+        streak: {
+            scoreThreshold: 6.5,
+            bonusPerStep: 0.02,
+            maxBonus: 0.25,
+            milestoneEvery: 5,
+            milestoneCashPerStreak: 30
+        },
+        review: {
+            failureThreshold: 1.0,
+            noPayThreshold: 4.0,
+            failurePenaltyRate: 0.2,
+            fallbackMinScore: 1,
+            fallbackScoreRange: 9
+        },
+        project: {
+            completionCashBase: 500,
+            royaltyPerScorePoint: 0.05,
+            milestoneBasePayout: 100,
+            milestonePayoutStep: 20,
+            milestoneBaseWords: 150,
+            milestoneWordsStep: 50
+        },
+        reputation: {
+            multiplierPerRep: 0.05
+        }
+    };
+
     const GAME = {
         cash: 0, totalWords: 0, publishedCount: 0, multiplier: 1.0,
         specialty: null, projectName: "", manuscript: [], 
@@ -514,22 +554,22 @@
         }
 
         editor.addEventListener('input', handleInput);
-        editor.addEventListener('input', () => adjustMomentum(1.5));
+        editor.addEventListener('input', () => adjustMomentum(BALANCE.momentum.gainPerInput));
         setInterval(() => { 
             saveGame(); 
             if (document.getElementById('job-modal').classList.contains('open')) renderJobBoard(); 
-        }, 1000);
+        }, BALANCE.tickMs.autosave);
 
         setInterval(() => {
-            adjustMomentum(-0.8);
-        }, 1000);
+            adjustMomentum(-BALANCE.momentum.decayPerTick);
+        }, BALANCE.tickMs.momentum);
 
         setInterval(() => {
             if (GAME.royaltiesPerTick > 0) {
                 GAME.cash += GAME.royaltiesPerTick;
                 renderStats();
             }
-        }, 5000);
+        }, BALANCE.tickMs.royalties);
     }
 
     function toggleSidebar() {
@@ -619,7 +659,11 @@
     }
 
     function getMomentumBonus() {
-        return GAME.momentum * 0.0025;
+        return GAME.momentum * BALANCE.momentum.bonusPerPoint;
+    }
+
+    function getStreakBonus() {
+        return Math.min(BALANCE.streak.maxBonus, GAME.streak * BALANCE.streak.bonusPerStep);
     }
 
     function getStreakBonus() {
@@ -700,19 +744,19 @@
         const job = GAME.currentJob;
         const words = text.split(/\s+/).length;
         document.getElementById('review-overlay').style.display = 'flex';
-        const aiResult = await callGeminiEvaluation(text, job) || { score: (Math.random() * 9 + 1).toFixed(1), critique: "Editor reviewed this offline." };
+        const aiResult = await callGeminiEvaluation(text, job) || { score: (Math.random() * BALANCE.review.fallbackScoreRange + BALANCE.review.fallbackMinScore).toFixed(1), critique: "Editor reviewed this offline." };
         document.getElementById('review-overlay').style.display = 'none';
         const score = parseFloat(aiResult.score);
         const quality = score / 10;
         const bonusMult = 1 + getMomentumBonus() + getStreakBonus();
-        let earnings = (score <= 1.0) ? -(job.payout * 0.2) : (score < 4.0 ? 0 : (job.payout * GAME.multiplier * quality * bonusMult));
+        let earnings = (score <= BALANCE.review.failureThreshold) ? -(job.payout * BALANCE.review.failurePenaltyRate) : (score < BALANCE.review.noPayThreshold ? 0 : (job.payout * GAME.multiplier * quality * bonusMult));
         GAME.cash += earnings; GAME.totalWords += words; GAME.publishedCount++;
 
-        if (score >= 6.5 && earnings > 0) {
+        if (score >= BALANCE.streak.scoreThreshold && earnings > 0) {
             GAME.streak++;
             GAME.bestStreak = Math.max(GAME.bestStreak || 0, GAME.streak);
-            if (GAME.streak % 5 === 0) {
-                const streakCash = 30 * GAME.streak;
+            if (GAME.streak % BALANCE.streak.milestoneEvery === 0) {
+                const streakCash = BALANCE.streak.milestoneCashPerStreak * GAME.streak;
                 GAME.cash += streakCash;
                 log('STREAK BONUS', `Hot streak x${GAME.streak}! +$${streakCash.toFixed(2)} bonus paid.`, 'milestone');
             }
@@ -720,7 +764,7 @@
             GAME.streak = 0;
         }
 
-        adjustMomentum(job.isMilestone ? 18 : 10);
+        adjustMomentum(job.isMilestone ? BALANCE.momentum.milestoneGain : BALANCE.momentum.sideJobGain);
         if (job.isMilestone) { GAME.manuscript.push({ title: job.title, text: text, score: aiResult.score, date: new Date().toLocaleDateString() }); updateRoyalties(); }
         if (job.cooldown) GAME.cooldowns[job.id] = Date.now() + job.cooldown;
         showCritiqueModal(aiResult.score, aiResult.critique, earnings);
@@ -731,7 +775,7 @@
     function completeProject() {
         if (!confirm("Publish this project? Soft reset will follow.")) return;
         const avgScore = GAME.manuscript.reduce((sum, m) => sum + parseFloat(m.score), 0) / GAME.manuscript.length;
-        const bonus = 500 * avgScore * GAME.multiplier;
+        const bonus = BALANCE.project.completionCashBase * avgScore * GAME.multiplier;
         GAME.cash += bonus; GAME.reputation += Math.floor(avgScore * 2);
         log('PROJECT COMPLETED', `${GAME.projectName} published! Earned $${bonus.toFixed(2)}`, 'milestone');
         GAME.manuscript = []; GAME.projectName = ""; GAME.specialty = null; GAME.currentJob = null; GAME.royaltiesPerTick = 0;
@@ -742,7 +786,7 @@
     }
 
     function updateRoyalties() {
-        let r = 0; GAME.manuscript.forEach(m => { r += (parseFloat(m.score) * 0.05); });
+        let r = 0; GAME.manuscript.forEach(m => { r += (parseFloat(m.score) * BALANCE.project.royaltyPerScorePoint); });
         GAME.royaltiesPerTick = r;
     }
 
@@ -763,7 +807,7 @@
         const milestoneNum = GAME.manuscript.length + 1;
         const milestoneNames = { 'Novel': 'Sprint', 'Screenplay': 'Vertical Slice', 'Play': 'Milestone', 'Poetry': 'Prototype', 'Essay': 'Design Pass', 'Sketch Comedy': 'Feature Beat' };
         const mName = milestoneNames[GAME.specialty] || "Milestone";
-        const milestoneJob = { id: 'm_current', isMilestone: true, title: `${mName} ${milestoneNum}`, brief: `Next milestone.`, payout: 100 + (milestoneNum * 20), minWords: 150 + (milestoneNum * 50) };
+        const milestoneJob = { id: 'm_current', isMilestone: true, title: `${mName} ${milestoneNum}`, brief: `Next milestone.`, payout: BALANCE.project.milestoneBasePayout + (milestoneNum * BALANCE.project.milestonePayoutStep), minWords: BALANCE.project.milestoneBaseWords + (milestoneNum * BALANCE.project.milestoneWordsStep) };
         const filteredSideJobs = JOBS.filter(j => j.type === 'Any' || j.type === GAME.specialty);
         [milestoneJob, ...filteredSideJobs].forEach(job => {
             const readyAt = GAME.cooldowns[job.id] || 0;
@@ -785,7 +829,7 @@
     function showArchive(m) { document.getElementById('archive-title').innerText = m.title; document.getElementById('archive-content').innerText = m.text; document.getElementById('archive-modal').classList.add('open'); }
     function exportManuscript() { if (GAME.manuscript.length === 0) return; let output = `# ${GAME.projectName}\n\n`; GAME.manuscript.forEach(m => { output += `## ${m.title}\n\n${m.text}\n\n`; }); const blob = new Blob([output], { type: 'text/markdown' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${GAME.projectName}.md`; a.click(); }
     function buyUpgrade(idx) { const item = UPGRADES[idx]; const lvl = GAME.upgrades[item.id] || 0; const cost = Math.floor(item.baseCost * Math.pow(item.costMult, lvl)); if (GAME.cash >= cost) { GAME.cash -= cost; GAME.upgrades[item.id]++; recalculateMultiplier(); saveGame(); refreshUI(); log('UPGRADE PURCHASED', `${item.name} acquired.`, 'success'); } }
-    function recalculateMultiplier() { let m = 1.0; UPGRADES.forEach(u => { m += (GAME.upgrades[u.id] || 0) * u.boost; }); m += (GAME.reputation || 0) * 0.05; GAME.multiplier = m; }
+    function recalculateMultiplier() { let m = 1.0; UPGRADES.forEach(u => { m += (GAME.upgrades[u.id] || 0) * u.boost; }); m += (GAME.reputation || 0) * BALANCE.reputation.multiplierPerRep; GAME.multiplier = m; }
     function renderStats() { document.getElementById('bank-balance').innerText = `$${GAME.cash.toLocaleString(undefined, {minimumFractionDigits: 2})}`; document.getElementById('total-published').innerText = `${GAME.manuscript.length} Milestones`; document.getElementById('total-words').innerText = GAME.totalWords.toLocaleString(); document.getElementById('multiplier-badge').innerText = `${GAME.multiplier.toFixed(2)}x / +${(getMomentumBonus() * 100).toFixed(1)}% flow / +${(getStreakBonus() * 100).toFixed(0)}% streak`; if (GAME.reputation > 0) { const r = document.getElementById('rep-badge'); r.style.display = 'block'; r.innerText = `Rep: ${GAME.reputation}`; } else { document.getElementById('rep-badge').style.display = 'none'; } if (GAME.streak > 0) { const s = document.getElementById('streak-badge'); s.style.display = 'block'; s.innerText = `Streak: x${GAME.streak}`; } else { document.getElementById('streak-badge').style.display = 'none'; } if (GAME.royaltiesPerTick > 0) { const r = document.getElementById('royalty-display'); r.style.opacity = 1; r.innerText = `+ $${GAME.royaltiesPerTick.toFixed(2)} / 5s`; } else { document.getElementById('royalty-display').style.opacity = 0; } }
     function renderShop() { const cont = document.getElementById('shop-container'); cont.innerHTML = ''; UPGRADES.forEach((u, i) => { const lvl = GAME.upgrades[u.id] || 0; const cost = Math.floor(u.baseCost * Math.pow(u.costMult, lvl)); const card = document.createElement('div'); card.className = `upgrade-card ${GAME.cash < cost ? 'disabled' : ''}`; card.onclick = () => buyUpgrade(i); card.innerHTML = `<div class="upgrade-info"><h4>${u.name} (Lvl ${lvl})</h4><p>${u.desc}</p></div><div style="font-weight:bold; color:var(--accent)">$${cost}</div>`; cont.appendChild(card); }); }
     function log(t, d, type) { const entry = document.createElement('div'); entry.className = `log-entry ${type}`; entry.innerHTML = `<div class="log-meta">${new Date().toLocaleTimeString()}</div><strong>${t}</strong><br>${d}`; const logBox = document.getElementById('game-log'); logBox.prepend(entry); logBox.scrollTop = 0; }
