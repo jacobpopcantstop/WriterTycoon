@@ -387,6 +387,8 @@
                 <div class="intel-item"><span>Cheapest upgrade</span><strong id="intel-upgrade">Ballpoint Pen · $15</strong></div>
                 <div class="intel-item"><span>Market trend</span><strong id="intel-trend">Any · warming up</strong></div>
                 <div class="intel-item"><span>Current demand bonus</span><strong id="intel-trend-bonus">+0%</strong></div>
+                <div class="intel-item"><span>Operating burn / tick</span><strong id="intel-burn">-$0.00</strong></div>
+                <div class="intel-item"><span>Cash runway</span><strong id="intel-runway">Stable</strong></div>
             </div>
         </div>
 
@@ -505,6 +507,12 @@
             bonusForMatch: 0.18,
             bonusForAny: 0.08,
             types: ['Novel', 'Screenplay', 'Play', 'Poetry', 'Essay', 'Sketch Comedy', 'Any']
+        },
+        economy: {
+            opsBaseBurnPerTick: 2,
+            burnPerUpgradeLevel: 0.4,
+            burnPerReputation: 0.25,
+            debtInterestRatePerTick: 0.01
         }
     };
 
@@ -515,6 +523,7 @@
         momentum: 0,
         streak: 0, bestStreak: 0,
         market: { trend: 'Any', expiresAt: 0 },
+        financials: { totalExpenses: 0 },
         ui: { sidebarCollapsed: false, dashboardCollapsed: false },
         cooldowns: {}, upgrades: { pen: 0, notebook: 0, lamp: 0, keyboard: 0, coffee: 0, chair: 0, marketing: 0 }
     };
@@ -583,8 +592,10 @@
         setInterval(() => {
             if (GAME.royaltiesPerTick > 0) {
                 GAME.cash += GAME.royaltiesPerTick;
-                renderStats();
             }
+            applyOperatingCosts();
+            renderStats();
+            renderProgressIntel();
         }, BALANCE.tickMs.royalties);
     }
 
@@ -685,6 +696,29 @@
         return 0;
     }
 
+    function getUpgradeLevelTotal() {
+        return Object.values(GAME.upgrades || {}).reduce((sum, lvl) => sum + (Number.isFinite(lvl) ? lvl : 0), 0);
+    }
+
+    function getOperatingBurnPerTick() {
+        const base = BALANCE.economy.opsBaseBurnPerTick;
+        const upgradeCost = getUpgradeLevelTotal() * BALANCE.economy.burnPerUpgradeLevel;
+        const repCost = (GAME.reputation || 0) * BALANCE.economy.burnPerReputation;
+        return Math.max(0, base + upgradeCost + repCost);
+    }
+
+    function applyOperatingCosts() {
+        const burn = getOperatingBurnPerTick();
+        GAME.cash -= burn;
+        GAME.financials.totalExpenses = (GAME.financials.totalExpenses || 0) + burn;
+
+        if (GAME.cash < 0) {
+            const debtInterest = Math.abs(GAME.cash) * BALANCE.economy.debtInterestRatePerTick;
+            GAME.cash -= debtInterest;
+            GAME.financials.totalExpenses += debtInterest;
+        }
+    }
+
     function renderProgressIntel() {
         const arc = !GAME.specialty ? 'Searching for a concept' : (GAME.manuscript.length >= 3 ? 'Launch-ready manuscript' : 'Drafting in progress');
         document.getElementById('intel-arc').innerText = arc;
@@ -706,6 +740,14 @@
         document.getElementById('intel-trend').innerText = `${trend} · ${secLeft}s`;
         const activeBonus = trend === 'Any' ? BALANCE.market.bonusForAny : BALANCE.market.bonusForMatch;
         document.getElementById('intel-trend-bonus').innerText = `+${(activeBonus * 100).toFixed(0)}%`;
+
+        const burn = getOperatingBurnPerTick();
+        document.getElementById('intel-burn').innerText = `-$${burn.toFixed(2)}`;
+
+        const hasPositiveCash = GAME.cash > 0;
+        const runwayTicks = burn > 0 && hasPositiveCash ? Math.floor(GAME.cash / burn) : 0;
+        const runwaySeconds = runwayTicks * (BALANCE.tickMs.royalties / 1000);
+        document.getElementById('intel-runway').innerText = !hasPositiveCash ? 'In debt' : (burn === 0 ? 'Stable' : `${runwaySeconds}s`);
     }
 
     function adjustMomentum(delta) {
@@ -885,7 +927,7 @@
     function exportManuscript() { if (GAME.manuscript.length === 0) return; let output = `# ${GAME.projectName}\n\n`; GAME.manuscript.forEach(m => { output += `## ${m.title}\n\n${m.text}\n\n`; }); const blob = new Blob([output], { type: 'text/markdown' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${GAME.projectName}.md`; a.click(); }
     function buyUpgrade(idx) { const item = UPGRADES[idx]; const lvl = GAME.upgrades[item.id] || 0; const cost = Math.floor(item.baseCost * Math.pow(item.costMult, lvl)); if (GAME.cash >= cost) { GAME.cash -= cost; GAME.upgrades[item.id]++; recalculateMultiplier(); saveGame(); refreshUI(); log('UPGRADE PURCHASED', `${item.name} acquired.`, 'success'); } }
     function recalculateMultiplier() { let m = 1.0; UPGRADES.forEach(u => { m += (GAME.upgrades[u.id] || 0) * u.boost; }); m += (GAME.reputation || 0) * BALANCE.reputation.multiplierPerRep; GAME.multiplier = m; }
-    function renderStats() { document.getElementById('bank-balance').innerText = `$${GAME.cash.toLocaleString(undefined, {minimumFractionDigits: 2})}`; document.getElementById('total-published').innerText = `${GAME.manuscript.length} Milestones`; document.getElementById('total-words').innerText = GAME.totalWords.toLocaleString(); const trendName = GAME.market?.trend || 'Any'; document.getElementById('multiplier-badge').innerText = `${GAME.multiplier.toFixed(2)}x / +${(getMomentumBonus() * 100).toFixed(1)}% flow / +${(getStreakBonus() * 100).toFixed(0)}% streak / trend:${trendName}`; if (GAME.reputation > 0) { const r = document.getElementById('rep-badge'); r.style.display = 'block'; r.innerText = `Rep: ${GAME.reputation}`; } else { document.getElementById('rep-badge').style.display = 'none'; } if (GAME.streak > 0) { const s = document.getElementById('streak-badge'); s.style.display = 'block'; s.innerText = `Streak: x${GAME.streak}`; } else { document.getElementById('streak-badge').style.display = 'none'; } if (GAME.royaltiesPerTick > 0) { const r = document.getElementById('royalty-display'); r.style.opacity = 1; r.innerText = `+ $${GAME.royaltiesPerTick.toFixed(2)} / 5s`; } else { document.getElementById('royalty-display').style.opacity = 0; } }
+    function renderStats() { document.getElementById('bank-balance').innerText = `$${GAME.cash.toLocaleString(undefined, {minimumFractionDigits: 2})}`; document.getElementById('total-published').innerText = `${GAME.manuscript.length} Milestones`; document.getElementById('total-words').innerText = GAME.totalWords.toLocaleString(); const trendName = GAME.market?.trend || 'Any'; document.getElementById('multiplier-badge').innerText = `${GAME.multiplier.toFixed(2)}x / +${(getMomentumBonus() * 100).toFixed(1)}% flow / +${(getStreakBonus() * 100).toFixed(0)}% streak / trend:${trendName}`; if (GAME.reputation > 0) { const r = document.getElementById('rep-badge'); r.style.display = 'block'; r.innerText = `Rep: ${GAME.reputation}`; } else { document.getElementById('rep-badge').style.display = 'none'; } if (GAME.streak > 0) { const s = document.getElementById('streak-badge'); s.style.display = 'block'; s.innerText = `Streak: x${GAME.streak}`; } else { document.getElementById('streak-badge').style.display = 'none'; } const burn = getOperatingBurnPerTick(); const netPerTick = GAME.royaltiesPerTick - burn; const r = document.getElementById('royalty-display'); r.style.opacity = 1; r.innerText = `${netPerTick >= 0 ? '+' : '-'} $${Math.abs(netPerTick).toFixed(2)} / ${(BALANCE.tickMs.royalties / 1000).toFixed(0)}s`; r.style.color = netPerTick >= 0 ? 'var(--gold)' : 'var(--danger)'; }
     function renderShop() { const cont = document.getElementById('shop-container'); cont.innerHTML = ''; UPGRADES.forEach((u, i) => { const lvl = GAME.upgrades[u.id] || 0; const cost = Math.floor(u.baseCost * Math.pow(u.costMult, lvl)); const card = document.createElement('div'); card.className = `upgrade-card ${GAME.cash < cost ? 'disabled' : ''}`; card.onclick = () => buyUpgrade(i); card.innerHTML = `<div class="upgrade-info"><h4>${u.name} (Lvl ${lvl})</h4><p>${u.desc}</p></div><div style="font-weight:bold; color:var(--accent)">$${cost}</div>`; cont.appendChild(card); }); }
     function log(t, d, type) { const entry = document.createElement('div'); entry.className = `log-entry ${type}`; entry.innerHTML = `<div class="log-meta">${new Date().toLocaleTimeString()}</div><strong>${t}</strong><br>${d}`; const logBox = document.getElementById('game-log'); logBox.prepend(entry); logBox.scrollTop = 0; }
 
@@ -909,6 +951,9 @@
             market: {
                 trend: typeof safe.market?.trend === 'string' ? safe.market.trend : 'Any',
                 expiresAt: Number.isFinite(safe.market?.expiresAt) ? safe.market.expiresAt : 0
+            },
+            financials: {
+                totalExpenses: Number.isFinite(safe.financials?.totalExpenses) ? safe.financials.totalExpenses : 0
             },
             streak: Number.isFinite(safe.streak) ? safe.streak : 0,
             bestStreak: Number.isFinite(safe.bestStreak) ? safe.bestStreak : 0
